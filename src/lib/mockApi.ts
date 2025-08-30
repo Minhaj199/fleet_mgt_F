@@ -1,4 +1,7 @@
-import { Incident } from "../types/type"
+import { toast } from "sonner"
+import { Car, Incident, Users } from "../types/type"
+import { request } from "../utils/axiosUtil"
+import { enqueueSnackbar } from "notistack"
 
 
 
@@ -17,14 +20,14 @@ function seed(): Incident[] {
     {
       id: 'INC-001', title: 'Minor Collision at Parking Lot', description: 'Scratched bumper.',
       reportedAt:new Date(),
-      severity: 'LOW', incidentType: 'COLLISION', location: 'Parking Lot A', latitude: 12.9, longitude: 77.6,
+      severity: 'LOW', incidentType: "ACCIDENT", location: 'Parking Lot A', latitude: 12.9, longitude: 77.6,
       occurredAt: new Date(now - 3*86400000).toISOString(), carId: 'ABC-123', carName: 'Toyota Camry',
       reportedById: 'U1', reportedByName: 'John Doe', attachments: [], images: [], odometer: 45231, estimatedCost: 500, status: 'PENDING', assignee: 'John Doe',
       updates: [{ id:'U-1', at: new Date(now-3*86400000).toISOString(), by:'System', type:'COMMENT', message:'Incident created'}]
     },
     {
       id: 'INC-002', title: 'Engine Overheating', description: 'Temp warning during drive.',reportedAt:new Date(),
-      severity: 'HIGH', incidentType: 'MECHANICAL', location: 'Highway 5', latitude: 13.0, longitude: 77.7,
+      severity: 'HIGH', incidentType: "FUEL_ISSUE", location: 'Highway 5', latitude: 13.0, longitude: 77.7,
       occurredAt: new Date(now - 7*86400000).toISOString(), carId: 'XYZ-789', carName: 'Ford Transit',
       reportedById: 'U2', reportedByName: 'Mike Johnson', attachments: [], images: [], odometer: 91000, estimatedCost: 1200, status: 'IN_PROGRESS', assignee: 'Mike Johnson',
       updates: [{ id:'U-2', at: new Date(now-7*86400000).toISOString(), by:'System', type:'COMMENT', message:'Investigation started' }]
@@ -67,6 +70,13 @@ export async function getIncident(id:string){
 export async function createIncident(data: Partial<Incident>){
   const all = load()
   const id = 'INC-' + String(all.length+1).padStart(3,'0')
+  type ProcessedData=Omit<Partial<Incident>,'attachments'>&{images:string[],documents:string[]}
+  let processedData:null|ProcessedData=null
+  if(data.attachments?.length){
+    processedData={...data,images:data.attachments.filter(el=>el.type==='image/jpeg').map(el=>el.dataUrl),documents:data.attachments.filter(el=>el.type!=='image').map(el=>el.dataUrl)}
+  }
+  const response=await request({url:'/api/incidents',method:'POST',data:{data:processedData!==null?processedData:data}})
+  console.log(data)
   const incident: Incident = {
     id,
     title: data.title||'Untitled',
@@ -90,6 +100,7 @@ export async function createIncident(data: Partial<Incident>){
     assignee: '',
     reportedAt:new Date(),
     updates: [{ id: crypto.randomUUID(), at: new Date().toISOString(), by: data.reportedByName||'User', type:'COMMENT', message:'Incident created' }]
+  
   }
   all.unshift(incident); save(all)
   return delay(incident)
@@ -138,4 +149,16 @@ export async function getStats({ startDate='', endDate='', status='', severity='
   })
   const trend = Object.entries(byDay).sort((a,b)=> a[0].localeCompare(b[0])).map(([label, value])=>({ label, value }))
   return delay({ total, byStatus, bySeverity, openIncidents, avgResolutionTime, trend })
+}
+export async function fetchSeed():Promise<{cars:Car[],users:Users[]}>{
+  try {
+    const data=await request({url:'/api/fetch-seed'})
+    return data
+  } catch (error) {
+    if(error instanceof Error){
+      enqueueSnackbar(error.message,{variant:'error'})
+      
+    }
+    return {cars:[],users:[]}
+  }
 }

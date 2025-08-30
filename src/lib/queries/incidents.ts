@@ -10,6 +10,17 @@ export const useIncidents = (filters: Filters = {}) => useQuery({ queryKey: quer
 
 export const useIncidentDetail = (id: string) => useQuery({ queryKey: queryKeys.incidents.detail(id), queryFn: () => api.getIncident(id), enabled: !!id })
 
+export const useSeeds = () =>useQuery({queryKey:queryKeys.incidents.seeds(),queryFn:()=>api.fetchSeed(),
+  staleTime: Infinity,
+  refetchOnWindowFocus: false,
+  refetchOnMount: false,
+   gcTime: Infinity,
+  
+})
+
+
+
+
 export const useCreateIncident = () => {
   const qc = useQueryClient()
   return useMutation({ mutationFn: (data: Partial<Incident>) => api.createIncident(data), onSuccess: () => qc.invalidateQueries({ queryKey: queryKeys.incidents.lists() }) })

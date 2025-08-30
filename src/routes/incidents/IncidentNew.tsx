@@ -9,7 +9,9 @@ export default function IncidentNew(){
   const nav = useNavigate()
   return (
     <IncidentForm onSubmit={(v: IncidentFormValues)=>{
-      create.mutate(v, { onSuccess: (data)=> nav(`/incidents/${data.id}`) })
+      create.mutate(v, { onSuccess: (data)=>{
+        nav(`/incidents/${data.id}`)
+      }  })
     }}/>
   )
 }

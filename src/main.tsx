@@ -11,6 +11,8 @@ import IncidentNew from './routes/incidents/IncidentNew'
 import IncidentDetail from './routes/incidents/IncidentDetail'
 import IncidentEdit from './routes/incidents/IncidentEdit'
 import IncidentStats from './routes/incidents/IncidentStats'
+import { SnackbarProvider} from 'notistack'
+
 
 const router = createBrowserRouter([
   { path: '/', element: <App />, children: [
@@ -26,9 +28,13 @@ const router = createBrowserRouter([
 const qc = new QueryClient()
 ReactDOM.createRoot(document.getElementById('root')!).render(
   <React.StrictMode>
+    <SnackbarProvider maxSnack={1}>
+
+  
     <QueryClientProvider client={qc}>
       <RouterProvider router={router} />
       <Toaster />
     </QueryClientProvider>
+      </SnackbarProvider>
   </React.StrictMode>
 )

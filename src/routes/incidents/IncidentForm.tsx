@@ -5,8 +5,8 @@ import { Input } from "../../components/ui/input";
 import { Textarea } from "../../components/ui/textarea";
 import { Button } from "../../components/ui/button";
 import { Select } from "../../components/ui/select";
-import { useState } from "react";
-import type { Attachment } from "../../types/type"; 
+import { useEffect, useState } from "react";
+import type { Attachment} from "../../types/type";
 import {
   DetailsSchema,
   EditExtrasSchema,
@@ -14,67 +14,77 @@ import {
   VehicleSchema,
 } from "../../utils/zodSchema";
 import {
+  AccidentOptions,
   assignees,
-  cars,
-  reporters,
+  severities,
   statuses,
   updateTypes,
   updateUsers,
 } from "../../data";
 import { IncidentFormValues } from "../../types/type";
+import { handleUpload } from "../../utils/cloudinary";
+import { useSeeds } from "../../lib/queries/incidents";
+import { enqueueSnackbar } from "notistack";
+async function filesToAttachments(files: FileList | null): Promise<Attachment[]> {
 
-const severities = [
-  { label: "Low", value: "LOW" },
-  { label: "Medium", value: "MEDIUM" },
-  { label: "High", value: "HIGH" },
-];
-const types = [
-  { label: "Collision", value: "COLLISION" },
-  { label: "Mechanical", value: "MECHANICAL" },
-  { label: "Other", value: "OTHER" },
-];
 
-async function filesToAttachments(
-  files: FileList | null
-): Promise<Attachment[]> {
   if (!files) return [];
   const out: Attachment[] = [];
+  
   for (const f of Array.from(files)) {
-    const dataUrl = await new Promise<string>((res, rej) => {
-      const reader = new FileReader();
-      reader.onload = () => res(reader.result as string);
-      reader.onerror = rej;
-      reader.readAsDataURL(f);
-    });
-    out.push({
+    const maxSize = 5 * 1024 * 1024;
+    const allowedTypes = ["application/pdf", "image/jpeg", "image/png", "image/jpg"];
+    if(f.size>maxSize){
+      enqueueSnackbar('max limit is 5mp',{variant:'error'})
+      return out
+    }else if(!allowedTypes.includes(f.type)){
+     enqueueSnackbar('not valid file formate',{variant:'error'})
+      return out
+    }
+
+    try {
+      const data:string= await handleUpload(f)
+      if(typeof data==='string'&&data.trim()){
+       
+        out.push({
       id: crypto.randomUUID(),
       name: f.name,
       type: f.type,
       size: f.size,
-      dataUrl,
+      dataUrl:data
     });
+      }
+    
+    } catch (error) {
+      
+     enqueueSnackbar('internal server error',{variant:'error'})
+    }
+   
   }
   return out;
 }
 
-export default function IncidentForm({
-  onSubmit,
-  defaultValues,
-  isEdit = false,
-}: {
-  onSubmit: (v: IncidentFormValues) => void;
+export default function IncidentForm({onSubmit,defaultValues,isEdit = false}: {onSubmit: (v: IncidentFormValues) => void;
   defaultValues?: Partial<IncidentFormValues>;
   isEdit?: boolean;
-}) {
+})
+ {
   const [step, setStep] = useState(0);
-  const methods = useForm<IncidentFormValues>({
-    resolver: zodResolver(
-      DetailsSchema.merge(LocationSchema)
-        .merge(VehicleSchema)
+  const [seed,setSeed]=useState<{cars:{label:string,value:string}[],users:{label:string,value:string}[]}>({cars:[],users:[]})
+    const {data}=useSeeds()
+
+  const methods = useForm<IncidentFormValues>({resolver: zodResolver(DetailsSchema.merge(LocationSchema).merge(VehicleSchema)
         .merge(EditExtrasSchema)
     ),
     defaultValues: { ...defaultValues },
   });
+
+  useEffect(()=>{
+    if(data?.cars.length&&data.users.length){
+      setSeed({cars:data.cars.map(el=>({label:el.model,value:String(el.id)})),users:data.users.map(el=>({label:el.name,value:String(el.id)}))})
+    }
+  },[data])
+
   const next = async () => {
     const sections = [
       DetailsSchema,
@@ -86,12 +96,21 @@ export default function IncidentForm({
     const parse = sections[step].safeParse(data);
     if (!parse.success) {
       methods.trigger();
+      enqueueSnackbar('please fill required fields',{variant:'warning'})
       return;
     }
     setStep((s) => Math.min(sections.length - 1, s + 1));
   };
   const prev = () => setStep((s) => Math.max(0, s - 1));
-
+ function handleOnSubmit(){
+  const parse=VehicleSchema.safeParse(methods.getValues())
+  if(!parse.success){
+    methods.trigger()
+    enqueueSnackbar('please fill required fields',{variant:'warning'})
+    return
+  }
+  onSubmit(methods.getValues())
+ }
   return (
     <FormProvider {...methods}>
       <div className="space-y-6">
@@ -118,6 +137,7 @@ export default function IncidentForm({
             <div>
               <label className="text-sm">Title</label>
               <Input
+            
                 {...methods.register("title")}
                 placeholder="Incident title"
               />
@@ -126,20 +146,25 @@ export default function IncidentForm({
               </p>
             </div>
             <div>
-              <label className="text-sm">Severity</label>
+              <label className="text-sm">Type</label>
               <Select
-                options={severities}
-                placeholder="Select severity"
-                value={methods.watch("severity") as any}
-                onValueChange={(v) => methods.setValue("severity", v as any)}
+
+                options={AccidentOptions}
+                placeholder="Select type"
+                value={methods.watch("incidentType") as any}
+               
+                onValueChange={(v) =>
+                  methods.setValue("incidentType", v as any)
+                }
               />
               <p className="text-xs text-red-600">
-                {methods.formState.errors.severity?.message as any}
+                {methods.formState.errors.incidentType?.message as any}
               </p>
             </div>
             <div className="md:col-span-2">
               <label className="text-sm">Description</label>
               <Textarea
+          
                 rows={4}
                 {...methods.register("description")}
                 placeholder="Describe incident"
@@ -148,18 +173,18 @@ export default function IncidentForm({
                 {methods.formState.errors.description?.message}
               </p>
             </div>
+
             <div>
-              <label className="text-sm">Type</label>
+              <label className="text-sm">Severity</label>
               <Select
-                options={types}
-                placeholder="Select type"
-                value={methods.watch("incidentType") as any}
-                onValueChange={(v) =>
-                  methods.setValue("incidentType", v as any)
-                }
+                options={severities}
+                placeholder="Select severity"
+                value={methods.watch("severity") as any}
+               
+                onValueChange={(v) => methods.setValue("severity", v as any)}
               />
               <p className="text-xs text-red-600">
-                {methods.formState.errors.incidentType?.message as any}
+                {methods.formState.errors.severity?.message as any}
               </p>
             </div>
           </section>
@@ -169,7 +194,7 @@ export default function IncidentForm({
           <section className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
               <label className="text-sm">Location</label>
-              <Input {...methods.register("location")} placeholder="Location" />
+              <Input {...methods.register("location")}  placeholder="Location" />
               <p className="text-xs text-red-600">
                 {methods.formState.errors.location?.message}
               </p>
@@ -208,9 +233,10 @@ export default function IncidentForm({
             <div>
               <label className="text-sm">Car</label>
               <Select
-                options={cars}
+                options={seed.cars}
                 placeholder="Select car"
                 value={methods.watch("carName") as any}
+                
                 onValueChange={(v) => methods.setValue("carName", v as any)}
               />
               <p className="text-xs text-red-600">
@@ -221,9 +247,10 @@ export default function IncidentForm({
             <div>
               <label className="text-sm">Reported By</label>
               <Select
-                options={reporters}
+                options={seed.users}
                 placeholder="Select reporter"
                 value={methods.watch("reportedByName") as any}
+               
                 onValueChange={(v) =>
                   methods.setValue("reportedByName", v as any)
                 }
@@ -233,9 +260,17 @@ export default function IncidentForm({
               </p>
             </div>
 
+
+
+
+
+
+
+
+
             <div className="md:col-span-2">
               <label className="text-sm">
-                Attachments (images/docs) (max 5)
+                Attachments (images/pdf) (max 5)
               </label>
               <Input
                 type="file"
@@ -375,7 +410,8 @@ export default function IncidentForm({
           {step < (isEdit ? 3 : 2) ? (
             <Button onClick={next}>Next</Button>
           ) : (
-            <Button onClick={methods.handleSubmit(onSubmit)}>Submit</Button>
+            // <Button onClick={methods.handleSubmit(onSubmit)}>Submit</Button>
+            <Button type="button" onClick={handleOnSubmit}>Submit</Button>
           )}
         </div>
       </div>
