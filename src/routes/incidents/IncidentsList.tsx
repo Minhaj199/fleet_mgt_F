@@ -1,13 +1,13 @@
 import { useEffect, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
-import { useIncidents, useSeeds } from '../../lib/queries/incidents'
+import { useIncidents, useSeeds, useUpdateIncident } from '../../lib/queries/incidents'
 import { Table, THead, TBody, TR, TH, TD } from '../../components/ui/table'
 import { Badge } from '../../components/ui/badge'
 import { Button } from '../../components/ui/button'
 import { Input } from '../../components/ui/input'
 import { Select } from '../../components/ui/select'
-import { Incident, IncidentTable } from '../../types/type' 
-import { AccidentOptions, assignees, severities, updateTypes } from '../../data'
+import { Incident, IncidentTable, Status } from '../../types/type' 
+import { AccidentOptions, assignees, severities, statusArray, statuses, updateTypes } from '../../data'
 import { Pagination } from '@mui/material'
 
 export default function IncidentsList(){
@@ -19,10 +19,10 @@ export default function IncidentsList(){
   const [assignedTo, setAssignedTo] = useState('')
   const [startDate, setStartDate] = useState('')
   const [endDate, setEndDate] = useState('')
-
   const limit = 3
   const { data={total:0,items:[]} } = useIncidents({ page, limit, query, cars, severity, type, assignedTo, startDate, endDate })
   const pageCount=Math.ceil(data?.total/limit)
+
   const [expandedRow, setExpandedRow] = useState<string|null>(null)
   const nav = useNavigate()
   const [seed,setSeeds]=useState<{cars:{label:string,value:string}[],users:{label:string,value:string}[]}>({cars:[{label:'',value:''}],users:[]})
@@ -31,6 +31,7 @@ const {data:seeds}=useSeeds()
       if(seeds&&'cars' in seeds&&'users' in seeds)
       setSeeds({cars:seeds.cars.map(el=>({label:el.model,value:String(el.id)})),users:seeds.users.map(el=>({label:el.name,value:String(el.id)}))})
     },[seeds])
+   
   return (
     <div className="space-y-4">
       {/* Filters */}
@@ -74,7 +75,7 @@ const {data:seeds}=useSeeds()
               </Badge>
             </TD>
             <TD><Badge className="bg-gray-50 border-gray-200">{i.type}</Badge></TD>
-            <TD>{i.assignedTo || '-'}</TD>
+            <TD>{i.assignedTo?.name || '-'}</TD>
             <TD className="space-x-2">
               <Button variant="outline" onClick={()=> setExpandedRow(r=> (i.id&&r===i.id)? null : i.id||'')}>View</Button>
               <Button variant="outline" onClick={()=> nav(`/incidents/${i.id}/edit`)}>Edit</Button>
@@ -115,7 +116,7 @@ const {data:seeds}=useSeeds()
         </Badge>
       </div>
       <div className="mt-1 text-sm">Type: {i.type}</div>
-      <div className="mt-1 text-sm">Assigned To: {i.assignedTo || '-'}</div>
+      <div className="mt-1 text-sm">Assigned To: {i.assignedTo?.name || '-'}</div>
 
       <div className="flex gap-2 mt-3">
         <Button variant="outline" onClick={()=> setExpandedRow(r=> (i.id&&r===i.id)? null : i.id||'')}>View</Button>
@@ -142,13 +143,20 @@ const {data:seeds}=useSeeds()
 }
 
 function InlineView({ item }: { item: Partial<IncidentTable> }){
-  const [status, setStatus] = useState<string>(item.status||'')
-  const [assignedTo, setAssignedTo] = useState(item.assignedTo || '')
-
+  const [status, setStatus] = useState<Status>(item.status||'PENDING')
+  const [assignedTo, setAssignedTo] = useState(item.assignedTo?.name || '')
+  const update=useUpdateIncident()
   const handleSave = () => {
-    console.log('Save', { id: item.id, status, assignedTo })
-  
+    if(status||assignedTo){
+      update.mutate({id:item.id||'',data:{status,assignedTo,from:'INLINE',userId:'2'}})
+    }
   }
+  const [seed,setSeeds]=useState<{cars:{label:string,value:string}[],users:{label:string,value:string}[]}>({cars:[{label:'',value:''}],users:[]})
+const {data:seeds}=useSeeds()
+    useEffect(()=>{
+      if(seeds&&'cars' in seeds&&'users' in seeds)
+      setSeeds({cars:seeds.cars.map(el=>({label:el.model,value:String(el.id)})),users:seeds.users.map(el=>({label:el.name,value:String(el.id)}))})
+    },[seeds])
 
   return (
     <div className="grid grid-cols-1 md:grid-cols-3 gap-4 bg-gray-50 p-4 rounded-xl">
@@ -162,23 +170,12 @@ function InlineView({ item }: { item: Partial<IncidentTable> }){
         <p className="text-sm text-gray-700">{new Date(item.occurredAt||'').toLocaleString()}</p>
       </div>
       <div>
-        <div className="font-semibold">Attachments</div>
-        <div className="flex flex-wrap gap-2">
-          {item.attachments?.map(a=> 
-            a.type.startsWith('image/') 
-              ? <img key={a.id} className="h-16 w-16 object-cover rounded" src={a.dataUrl} /> 
-              : <a key={a.id} href={a.dataUrl} download={a.name} className="text-xs underline">{a.name}</a>
-          )}
-        </div>
+        
         <div className="mt-4">
           <div className="font-semibold mb-1">Edit Status</div>
-          <Select value={status} onValueChange={setStatus} options={[
-            {label:'Pending', value:'PENDING'},
-            {label:'In Progress', value:'IN_PROGRESS'},
-            {label:'Resolved', value:'RESOLVED'}
-          ]} />
+          <Select value={status} onValueChange={(v:any)=>setStatus(v)} options={[...statuses,{label:'status',value:''}]} />
           <div className="font-semibold mt-2 mb-1">Assigned To</div>
-          <Select value={assignedTo} onValueChange={setAssignedTo} options={assignees} />
+          <Select value={assignedTo} onValueChange={setAssignedTo} options={[...seed.users,{label:'assingnedTo',value:''}]} />
           <Button variant="outline" className="mt-2" onClick={handleSave}>Save</Button>
         </div>
       </div>

@@ -6,17 +6,9 @@ export const cars = [
   { label: 'Ford Focus', value: 'ford-focus' },
 ]
 
-export const reporters = [
-  { label: 'Alice Johnson', value: 'alice' },
-  { label: 'Bob Smith', value: 'bob' },
-  { label: 'Charlie Davis', value: 'charlie' },
-]
-export const updateUsers = [
-  { label: "Alice Johnson", value: "alice" },
-  { label: "Bob Smith", value: "bob" },
-  { label: "Charlie Davis", value: "charlie" },
-]
 
+
+export const statusArray:Status[]=["CANCELLED","PENDING","RESOLVED","CLOSED","IN_PROGRESS" ]
 export const updateTypes:{label:string,value:IncidentUpdateType}[] =  [
   { label: "Status Change", value: "STATUS_CHANGE" },
   { label: "Comment Added", value: "COMMENT" },

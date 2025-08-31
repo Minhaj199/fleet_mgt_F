@@ -20,8 +20,6 @@ export async function listIncidents({ page=1, limit=2, query='', cars='', severi
 
 export async function getIncident(id:string){
   const item:IncidentDetails =  await request({url:`/api/incidents?from=get-incident&id=${id}`})
-  console.log(item)
-  console.log(item)
   if(!item) throw new Error('Not found')
   return (item)
 }
@@ -33,7 +31,6 @@ export async function createIncident(data: Partial<Incident>){
     processedData={...data,images:data.attachments.filter(el=>el.type==='image/jpeg').map(el=>el.dataUrl),documents:data.attachments.filter(el=>el.type==='application/pdf').map(el=>el.dataUrl)}
   }
   const response=await request({url:'/api/incidents',method:'POST',data:{data:processedData!==null?processedData:data}})
-  console.log(response)
   const incident: Incident = {
     id:response.id,
     title: data.title||'Untitled',
@@ -56,51 +53,49 @@ export async function createIncident(data: Partial<Incident>){
     status: 'PENDING',
     assignee: '',
     reportedAt:new Date(),
-    updates: [{ id: crypto.randomUUID(), at: new Date().toISOString(), by: data.reportedByName||'User', type:'COMMENT', message:'Incident created' }]
+    updates: [{ id: crypto.randomUUID(), createdAt: new Date().toISOString(), user:{name:''}, updateType:'COMMENT', message:'Incident created' }]
   
   }
   return (incident)
 }
 
 export async function updateIncident(id:string, patch: Partial<Incident>){
-  const all =await load()
-  const idx = all.findIndex(i=>i.id===id)
-  if (idx===-1) throw new Error('Not found')
-  const merged = { ...all[idx], ...patch }
-  merged.images = (merged.attachments||[]).filter(a=>a.type.startsWith('image/')).map(a=>a.dataUrl)
-  all[idx] = merged; save(all)
-  return delay(merged)
+  
+  const idx = await request({url:'/api/incidents/'+id,method:'put',data:patch})
+
+  return idx
 }
 
-export async function addComment(id:string, by:string, message:string){
-  const all =await load()
-  const idx = all.findIndex(i=>i.id===id)
-  if (idx===-1) throw new Error('Not found')
-  all[idx].updates.unshift({ id: crypto.randomUUID(), at: new Date().toISOString(), by, type:'COMMENT', message })
-  save(all)
-  return delay(all[idx])
+export async function addComment(id:string, by:string, message:string,incidentType='COMMENT'){
+  const result:{id:string}=await request({url:'api/incidents/updates/'+id,method:'POST',data:{by:1,message,incidentType}})
+  return result
 }
 
 export async function getStats({ startDate='', endDate='', status='', severity='' }:{ startDate?:string; endDate?:string; status?:string; severity?:string }){
-  const { items: list } = await listIncidents({ page:1, limit:10000, startDate, endDate, status, severity })
+  const {items:list} = await listIncidents({ page:1, limit:10000, startDate, endDate, status, severity })
+
   const total = list.length
+
   const byStatus: Record<string, number> = {}
   const bySeverity: Record<string, number> = {}
   list.forEach(i=>{
-    byStatus[i.status] = (byStatus[i.status]||0)+1
-    bySeverity[i.severity] = (bySeverity[i.severity]||0)+1
+    byStatus[i.status||'PENDING'] = (byStatus[i.status||"PENDING"]||0)+1
+    bySeverity[i.severity||'LOW'] = (bySeverity[i.severity||'LOW']||0)+1
   })
   const openIncidents = list.filter(i=> i.status!=='RESOLVED').length
   // avg resolution (days)
-  const resolved = list.filter(i=> i.status==='RESOLVED' && i.resolvedAt)
+  const resolved = list.filter(i=>{
+    
+    return i.status==='RESOLVED' && i.resolvedAt
+  } )
   let avgResolutionTime = 0
   if(resolved.length){
-    avgResolutionTime = resolved.reduce((sum,i)=> sum + (new Date(i.resolvedAt!).getTime() - new Date(i.occurredAt).getTime()), 0)/resolved.length/86400000
+    avgResolutionTime = resolved.reduce((sum,i)=> sum + (new Date(i.resolvedAt!).getTime() - new Date(i.occurredAt||new Date).getTime()), 0)/resolved.length/86400000
   }
   // trend by day
   const byDay: Record<string, number> = {}
   list.forEach(i=> {
-    const day = new Date(i.occurredAt).toISOString().slice(0,10)
+    const day = new Date(i.occurredAt||new Date()).toISOString().slice(0,10)
     byDay[day] = (byDay[day]||0)+1
   })
   const trend = Object.entries(byDay).sort((a,b)=> a[0].localeCompare(b[0])).map(([label, value])=>({ label, value }))

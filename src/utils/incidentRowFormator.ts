@@ -3,7 +3,8 @@ import { Incident, IncidentRow, IncidentTable } from "../types/type";
 
 
 export function rowIncidentFormater(data:IncidentRow[]){
-    try {
+    
+      
         const processedData:Partial<IncidentTable>[]= data?.map(el=>{
         return {
             id:String(el.id),
@@ -13,16 +14,12 @@ export function rowIncidentFormater(data:IncidentRow[]){
             assignedTo:el.assignedTo,
             severity:el.severity,
             status:el.status,
-            incidentType:el.type,
+            type:el.type,
             location:el.location,
             occurredAt:el.occurredAt,
-            tbId:'INC-' + String(el.id).padStart(3,'0')
+            tbId:'INC-' + String(el.id).padStart(3,'0'),
+            resolvedAt:el.resolvedAt
         }
     })
     return processedData
-    } catch (error) {
-        console.log(error)
-        return []
-    }
-   
 }

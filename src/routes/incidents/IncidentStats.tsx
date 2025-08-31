@@ -34,7 +34,7 @@ export default function IncidentStats(){
         <StatCard title="Total Incidents" value={data?.total ?? 0} />
         <StatCard title="Open Incidents" value={data?.openIncidents ?? 0} />
         <StatCard title="Avg Resolution (days)" value={(data?.avgResolutionTime ?? 0).toFixed(1)} />
-        <StatCard title="High Severity" value={data?.bySeverity?.['HIGH'] ?? 0} />
+        <StatCard title="Critical Severity" value={data?.bySeverity?.['CRITICAL'] ?? 0} />
       </div>
 
       <Card><CardContent><Line data={chartData} /></CardContent></Card>

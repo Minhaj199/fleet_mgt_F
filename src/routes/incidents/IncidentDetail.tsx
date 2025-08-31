@@ -7,15 +7,14 @@ import { useState } from 'react'
 
 export default function IncidentDetail() {
   const {i_id = '' } = useParams ()
-  console.log(i_id)
-  const { data={title:'',id:'',carName:'',images:[],documents:[],carId:'',description:'',occurredAt:'',status:'PENDING',severity:'LOW',type:'OTHER',updates:[],assignedTo:'',location:1,latitude:'',longitude:'',reportedAt:'',reportedByName:'',estimatedCost:'',actualCost:''} } = useIncidentDetail(i_id!)
-  console.log(data)
+
+  const { data={title:'',id:'',carName:'',images:[],documents:[],carId:'',description:'',occurredAt:'',car:{model:''},status:'PENDING',severity:'LOW',type:'OTHER',updates:[],assignedTo:{name:''},location:1,latitude:'',longitude:'',reportedAt:'',reportedByName:'',estimatedCost:'',actualCost:''} } = useIncidentDetail(i_id!)
+
   const [msg, setMsg] = useState('')
   const add = useAddIncidentComment()
 
   if (!data) return <div>Loading...</div>
   const i = data
-
   return (
    
     <div className="space-y-6">
@@ -88,6 +87,7 @@ export default function IncidentDetail() {
               {i.documents?.map((el)=>{
                 return(
                   <a
+                  target="_blank"
                     key={el}
                     href={el}
                     download={el}
@@ -102,7 +102,7 @@ export default function IncidentDetail() {
 
           {/* Messages */}
           <section className="space-y-2">
-            <h3 className="font-semibold">Messages</h3>
+            <h3 className="font-semibold">Messages&time line</h3>
             <div className="flex gap-2">
               <Input
                 placeholder="Write a message..."
@@ -112,7 +112,7 @@ export default function IncidentDetail() {
               <Button
                 onClick={() => {
                   if (!msg) return
-                  add.mutate({ id: i.id, by: 'You', comment: msg })
+                  add.mutate({ id: i.id, by: 'user', comment: msg })
                   setMsg('')
                 }}
               >
@@ -123,14 +123,14 @@ export default function IncidentDetail() {
               {i.updates?.map((u) => (
                 <li key={u.id} className="p-3 text-sm">
                   <div className="flex items-center justify-between">
-                    <span className="font-medium">{u.by}</span>
+                    <span className="font-medium">{u.user.name}</span>
                     <span className="text-xs text-gray-500">
-                      {new Date(u.at).toLocaleString()}
+                      {new Date(u.createdAt).toLocaleString()}
                     </span>
                   </div>
                   <div className="text-gray-700">{u.message}</div>
                   <div className="text-xs text-gray-500 italic">
-                    Type: {u.type ?? 'GENERAL'}
+                    Type: {u.updateType ?? 'GENERAL'}
                   </div>
                 </li>
               ))}
@@ -142,11 +142,11 @@ export default function IncidentDetail() {
         <aside className="space-y-2">
           <div>
             <span className="font-semibold">Vehicle</span>
-            <div className="text-sm text-gray-700">{i.carName}</div>
+            <div className="text-sm text-gray-700">{i.car.model}</div>
           </div>
           <div>
             <span className="font-semibold">Assigned To</span>
-            <div className="text-sm text-gray-700">{i.assignedTo ?? 'Unassigned'}</div>
+            <div className="text-sm text-gray-700">{i.assignedTo?i.assignedTo.name:'un assingned'}</div>
           </div>
           <div>
             <span className="font-semibold">Location</span>

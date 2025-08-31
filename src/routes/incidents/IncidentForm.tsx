@@ -19,7 +19,6 @@ import {
   severities,
   statuses,
   updateTypes,
-  updateUsers,
 } from "../../data";
 import { IncidentFormValues } from "../../types/type";
 import { handleUpload } from "../../utils/cloudinary";
@@ -68,7 +67,9 @@ export default function IncidentForm({onSubmit,defaultValues,isEdit = false}: {o
   defaultValues?: Partial<IncidentFormValues>;
   isEdit?: boolean;
 })
+
  {
+  console.log(defaultValues)
   const [step, setStep] = useState(0);
   const [seed,setSeed]=useState<{cars:{label:string,value:string}[],users:{label:string,value:string}[]}>({cars:[],users:[]})
     const {data}=useSeeds()
@@ -149,7 +150,7 @@ export default function IncidentForm({onSubmit,defaultValues,isEdit = false}: {o
               <label className="text-sm">Type</label>
               <Select
 
-                options={AccidentOptions}
+                options={[...AccidentOptions,{label:'type',value:''}]}
                 placeholder="Select type"
                 value={methods.watch("incidentType") as any}
                
@@ -322,8 +323,9 @@ export default function IncidentForm({onSubmit,defaultValues,isEdit = false}: {o
                         className="h-24 w-full object-cover rounded"
                       />
                     ) : (
-                      <div className="h-24 flex items-center justify-center bg-gray-50 rounded">
-                        {a.name}
+                      <div  className="h-24 flex items-center justify-center bg-gray-50 rounded">
+                        <a target="_blank" href={a.dataUrl}>{a.name}</a>
+                        
                       </div>
                     )}
                     <div className="truncate">{a.name}</div>
@@ -355,7 +357,7 @@ export default function IncidentForm({onSubmit,defaultValues,isEdit = false}: {o
             <div>
               <label className="text-sm">Updated By</label>
               <Select
-                options={updateUsers}
+                options={seed.users}
                 placeholder="Select user"
                 value={methods.watch("changedBy") as any}
                 onValueChange={(v) => methods.setValue("changedBy", v as any)}

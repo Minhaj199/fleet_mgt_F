@@ -45,26 +45,37 @@ export interface Incident {
   odometer?: number
   estimatedCost?: number
   actualCost?: number
-  assignedTo?:string,
+  assignedTo?:{name:string},
   status: Status
   assignee?: string
   resolvedAt?: string,
   reportedAt:Date
-  updates: { id:string; at:string; by:string; type:IncidentUpdateType; message:string }[]
+  updates: { id:string; createdAt:string; user:{name:string}; updateType:IncidentUpdateType; message:string }[]
 }
- export type IncidentTable=Omit<Incident,'assignedTo'|'id'|'reportedAt'>&{id:string,assignedTo?:string|null,reportedAt:string}
-  export type IncidentDetails=Omit<Incident,'assignedTo'|'reportedAt'>&{assignedTo:string|null,reportedAt:string,tbId:string,images:string[],documents:string[]}
-export type IncidentRow={
+ export type IncidentTable=Omit<Incident,'assignedTo'|'id'|'reportedAt'>&{id:string,assignedTo?:{name:string},reportedAt:string}
+  export type IncidentDetails=Omit<Incident,'assignedTo'|'reportedAt'>&{car:{make:string,model:string},assignedTo?:{name:string},reportedAt:string,tbId:string,images:string[],documents:string[]}
+   type WithourAssinnedTo=Omit<Incident,'assignedTo'>
+  export type UpdateInput = WithourAssinnedTo& {
+    from:UPDATE_FROM
+    userId:string
+    assignedTo:string
+  }
+
+
+type UPDATE_FROM='INLINE'|'MAIN_UPDATE'
+
+  export type IncidentRow={
     id: number,
     title: string,
     description: string,
     car: {model:string,make:string},
-    assignedTo?: null|string,
+    assignedTo?: {name:string},
     severity: Severity,
     status: Status,
     type:IncidentType,
     location: string,
     occurredAt: string,
+    resolvedAt?:string
 }
 
 /////car type//
@@ -84,3 +95,4 @@ export type Users={
     name: string,
     email: string,
 }
+
