@@ -41,7 +41,7 @@ async function filesToAttachments(files: FileList | null): Promise<Attachment[]>
      enqueueSnackbar('not valid file formate',{variant:'error'})
       return out
     }
-
+  
     try {
       const data:string= await handleUpload(f)
       if(typeof data==='string'&&data.trim()){
@@ -233,7 +233,7 @@ export default function IncidentForm({onSubmit,defaultValues,isEdit = false}: {o
             <div>
               <label className="text-sm">Car</label>
               <Select
-                options={seed.cars}
+                options={[{label:'all',value:''},...seed.cars]}
                 placeholder="Select car"
                 value={methods.watch("carName") as any}
                 
@@ -247,7 +247,8 @@ export default function IncidentForm({onSubmit,defaultValues,isEdit = false}: {o
             <div>
               <label className="text-sm">Reported By</label>
               <Select
-                options={seed.users}
+                
+                options={[{label:'users',value:''},...seed.users]}
                 placeholder="Select reporter"
                 value={methods.watch("reportedByName") as any}
                
@@ -410,7 +411,7 @@ export default function IncidentForm({onSubmit,defaultValues,isEdit = false}: {o
           {step < (isEdit ? 3 : 2) ? (
             <Button onClick={next}>Next</Button>
           ) : (
-            // <Button onClick={methods.handleSubmit(onSubmit)}>Submit</Button>
+           
             <Button type="button" onClick={handleOnSubmit}>Submit</Button>
           )}
         </div>

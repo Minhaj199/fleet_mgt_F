@@ -12,12 +12,12 @@ export default function IncidentEdit(){
   if(!data) return <div>Loading...</div>
   return (
     <IncidentForm isEdit defaultValues={{
-      title: data.title, description: data.description, severity: data.severity as any, incidentType: data.incidentType as any,
+      title: data.title, description: data.description, severity: data.severity as any, incidentType: data.type as any,
       location: data.location, occurredAt: data.occurredAt, latitude: data.latitude, longitude: data.longitude,
       carName: data.carName, reportedByName: data.reportedByName, odometer: data.odometer, estimatedCost: data.estimatedCost, actualCost: data.actualCost,
       attachments: data.attachments
     }} onSubmit={(v: IncidentFormValues)=>{
-      update.mutate({ id, data: { ...data, ...v } }, { onSuccess: ()=> nav(`/incidents/${id}`) })
+      update.mutate({ id, data: { ...data, ...v,assignedTo:data.assignedTo?data.assignedTo:'' } }, { onSuccess: ()=> nav(`/incidents/${id}`) })
     }}/>
   )
 }

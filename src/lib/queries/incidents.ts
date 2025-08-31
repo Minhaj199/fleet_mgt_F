@@ -4,7 +4,7 @@ import { queryKeys } from '../query-keys'
 import * as api from '../mockApi'
 import { Incident } from '../../types/type'; 
 
-export interface Filters { page?: number; limit?: number; query?: string; status?: string; severity?: string; type?: string; startDate?: string; endDate?: string }
+export interface Filters { page?: number; limit?: number; query?: string;assignedTo?:string ,cars?: string; severity?: string; type?: string; startDate?: string; endDate?: string }
 
 export const useIncidents = (filters: Filters = {}) => useQuery({ queryKey: queryKeys.incidents.list(filters), queryFn: () => api.listIncidents(filters), placeholderData: p=>p })
 
@@ -42,4 +42,4 @@ export const useAddIncidentComment = () => {
   return useMutation({ mutationFn: ({ id, by, comment }: { id: string; by: string; comment: string }) => api.addComment(id, by, comment), onSuccess: (_d, vars) => qc.invalidateQueries({ queryKey: queryKeys.incidents.detail(vars.id) }) })
 }
 
-export const useIncidentStats = (filters: Pick<Filters, 'startDate'|'endDate'|'status'|'severity'>) => useQuery({ queryKey: ['incident-stats', filters], queryFn: () => api.getStats(filters) })
+export const useIncidentStats = (filters: Pick<Filters, 'startDate'|'endDate'|'cars'|'severity'>) => useQuery({ queryKey: ['incident-stats', filters], queryFn: () => api.getStats(filters) })

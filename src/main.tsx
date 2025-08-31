@@ -19,7 +19,7 @@ const router = createBrowserRouter([
     { index: true, element: <IncidentsList /> },
     { path: 'incidents', element: <IncidentsList /> },
     { path: 'incidents/new', element: <IncidentNew /> },
-    { path: 'incidents/:id', element: <IncidentDetail /> },
+    { path: 'incidents/:i_id', element: <IncidentDetail /> },
     { path: 'incidents/:id/edit', element: <IncidentEdit /> },
     { path: 'incidents/stats', element: <IncidentStats /> },
   ]}

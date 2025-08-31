@@ -5,7 +5,6 @@ export interface SelectProps { value?: string; onValueChange?: (v: string) => vo
 export function Select({ value, onValueChange, options, placeholder='Select', className }: SelectProps) {
   return (
     <select value={value ?? ''} onChange={e => onValueChange?.(e.target.value)} className={cn('w-full rounded-lg border border-input px-3 py-2 outline-none focus:ring-2 focus:ring-ring bg-white', className)}>
-      <option value="">{placeholder}</option>
       {options.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
     </select>
   )

@@ -6,8 +6,10 @@ import { Button } from '../../components/ui/button'
 import { useState } from 'react'
 
 export default function IncidentDetail() {
-  const { id = '' } = useParams()
-  const { data } = useIncidentDetail(id!)
+  const {i_id = '' } = useParams ()
+  console.log(i_id)
+  const { data={title:'',id:'',carName:'',images:[],documents:[],carId:'',description:'',occurredAt:'',status:'PENDING',severity:'LOW',type:'OTHER',updates:[],assignedTo:'',location:1,latitude:'',longitude:'',reportedAt:'',reportedByName:'',estimatedCost:'',actualCost:''} } = useIncidentDetail(i_id!)
+  console.log(data)
   const [msg, setMsg] = useState('')
   const add = useAddIncidentComment()
 
@@ -15,6 +17,7 @@ export default function IncidentDetail() {
   const i = data
 
   return (
+   
     <div className="space-y-6">
       {/* Header */}
       <div className="flex items-center justify-between">
@@ -49,7 +52,7 @@ export default function IncidentDetail() {
           >
             {i.severity}
           </Badge>
-          <Badge className="bg-gray-50 border-gray-200">{i.incidentType}</Badge>
+          <Badge className="bg-gray-50 border-gray-200">{i.type}</Badge>
           <Link
             to={`/incidents/${i.id}/edit`}
             className="text-primary underline text-sm"
@@ -73,24 +76,27 @@ export default function IncidentDetail() {
           <section className="space-y-2">
             <h3 className="font-semibold">Attachments</h3>
             <div className="flex flex-wrap gap-2">
-              {i.attachments?.map((a) =>
-                a.type.startsWith('image/') ? (
+              {i.images?.map((a) =>
+                 (
                   <img
-                    key={a.id}
-                    src={a.dataUrl}
+                    key={a}
+                    src={a}
                     className="h-24 w-24 object-cover rounded"
                   />
-                ) : (
+                ) 
+              )}
+              {i.documents?.map((el)=>{
+                return(
                   <a
-                    key={a.id}
-                    href={a.dataUrl}
-                    download={a.name}
+                    key={el}
+                    href={el}
+                    download={el}
                     className="text-sm underline"
                   >
-                    {a.name}
+                    {el}
                   </a>
                 )
-              )}
+              })}
             </div>
           </section>
 
@@ -114,7 +120,7 @@ export default function IncidentDetail() {
               </Button>
             </div>
             <ul className="divide-y border rounded-xl">
-              {i.updates.map((u) => (
+              {i.updates?.map((u) => (
                 <li key={u.id} className="p-3 text-sm">
                   <div className="flex items-center justify-between">
                     <span className="font-medium">{u.by}</span>

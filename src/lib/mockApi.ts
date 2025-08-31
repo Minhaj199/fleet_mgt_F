@@ -1,88 +1,45 @@
-import { toast } from "sonner"
-import { Car, Incident, Users } from "../types/type"
+import { Car, Incident, IncidentDetails, IncidentRow, Users } from "../types/type"
 import { request } from "../utils/axiosUtil"
 import { enqueueSnackbar } from "notistack"
+import { rowIncidentFormater } from "../utils/incidentRowFormator"
 
 
 
-const LS_KEY = 'fleet-incidents-data-v2'
 
-function load(): Incident[] {
-  const raw = localStorage.getItem(LS_KEY)
-  if (!raw) return seed()
-  try { return JSON.parse(raw) as Incident[] } catch { return seed() }
-}
-function save(data: Incident[]) { localStorage.setItem(LS_KEY, JSON.stringify(data)) }
 
-function seed(): Incident[] {
-  const now = Date.now()
-  const data: Incident[] = [
-    {
-      id: 'INC-001', title: 'Minor Collision at Parking Lot', description: 'Scratched bumper.',
-      reportedAt:new Date(),
-      severity: 'LOW', incidentType: "ACCIDENT", location: 'Parking Lot A', latitude: 12.9, longitude: 77.6,
-      occurredAt: new Date(now - 3*86400000).toISOString(), carId: 'ABC-123', carName: 'Toyota Camry',
-      reportedById: 'U1', reportedByName: 'John Doe', attachments: [], images: [], odometer: 45231, estimatedCost: 500, status: 'PENDING', assignee: 'John Doe',
-      updates: [{ id:'U-1', at: new Date(now-3*86400000).toISOString(), by:'System', type:'COMMENT', message:'Incident created'}]
-    },
-    {
-      id: 'INC-002', title: 'Engine Overheating', description: 'Temp warning during drive.',reportedAt:new Date(),
-      severity: 'HIGH', incidentType: "FUEL_ISSUE", location: 'Highway 5', latitude: 13.0, longitude: 77.7,
-      occurredAt: new Date(now - 7*86400000).toISOString(), carId: 'XYZ-789', carName: 'Ford Transit',
-      reportedById: 'U2', reportedByName: 'Mike Johnson', attachments: [], images: [], odometer: 91000, estimatedCost: 1200, status: 'IN_PROGRESS', assignee: 'Mike Johnson',
-      updates: [{ id:'U-2', at: new Date(now-7*86400000).toISOString(), by:'System', type:'COMMENT', message:'Investigation started' }]
-    },
-    {
-      id: 'INC-003', title: 'Windshield Crack', description: 'Small crack found after trip.',reportedAt:new Date(),
-      severity: 'MEDIUM', incidentType: 'OTHER', location: 'Garage', occurredAt: new Date(now - 15*86400000).toISOString(),
-      carId: 'DEF-456', carName: 'Honda Civic', reportedById:'U3', reportedByName:'Sara Lee', attachments: [], images: [], status: 'RESOLVED', assignee:'Sara Lee',
-      updates: [{ id:'U-3', at: new Date(now-15*86400000).toISOString(), by:'System', type:'COMMENT', message:'Resolved' }], odometer: 67000, estimatedCost: 200, actualCost: 220, resolvedAt: new Date(now-14*86400000).toISOString()
-    }
-  ]
-  save(data); return data
-}
 
 function delay<T>(data:T, ms=300){ return new Promise<T>(res=>setTimeout(()=>res(data), ms)) }
 
-export async function listIncidents({ page=1, limit=10, query='', status='', severity='', type='', startDate='', endDate='' }:any){
-  const all = load()
-  let filtered = all.filter(i =>
-    (query? (i.title+i.description+i.carName+i.id).toLowerCase().includes(query.toLowerCase()):true) &&
-    (status? i.status===status: true) &&
-    (severity? i.severity===severity: true) &&
-    (type? i.incidentType===type: true) &&
-    (startDate? new Date(i.occurredAt) >= new Date(startDate): true) &&
-    (endDate? new Date(i.occurredAt) <= new Date(endDate): true)
-  )
-  const total = filtered.length
-  const start = (page-1)*limit
-  const items = filtered.slice(start, start+limit)
-  return delay({ items, total, page, limit })
+export async function listIncidents({ page=1, limit=2, query='', cars='', severity='', type='',assignedTo='', startDate='', endDate='' }:any){
+  const raw:{data:IncidentRow[],totoalCount:number} =await request({url:`/api/incidents?page=${page}&limit=${limit}&query=${query}&cars=${cars}&severity=${severity}&accidentOptions=${type}&assignedTo=${assignedTo}&startDate=${startDate}&endDate=${endDate}`})
+  const total = raw.totoalCount
+  const items =rowIncidentFormater(raw.data)||[]
+  return ({ items, total, page, limit })
+  
 }
 
 export async function getIncident(id:string){
-  const all = load()
-  const item = all.find(i=>i.id===id)
+  const item:IncidentDetails =  await request({url:`/api/incidents?from=get-incident&id=${id}`})
+  console.log(item)
+  console.log(item)
   if(!item) throw new Error('Not found')
-  return delay(item)
+  return (item)
 }
 
 export async function createIncident(data: Partial<Incident>){
-  const all = load()
-  const id = 'INC-' + String(all.length+1).padStart(3,'0')
   type ProcessedData=Omit<Partial<Incident>,'attachments'>&{images:string[],documents:string[]}
   let processedData:null|ProcessedData=null
   if(data.attachments?.length){
-    processedData={...data,images:data.attachments.filter(el=>el.type==='image/jpeg').map(el=>el.dataUrl),documents:data.attachments.filter(el=>el.type!=='image').map(el=>el.dataUrl)}
+    processedData={...data,images:data.attachments.filter(el=>el.type==='image/jpeg').map(el=>el.dataUrl),documents:data.attachments.filter(el=>el.type==='application/pdf').map(el=>el.dataUrl)}
   }
   const response=await request({url:'/api/incidents',method:'POST',data:{data:processedData!==null?processedData:data}})
-  console.log(data)
+  console.log(response)
   const incident: Incident = {
-    id,
+    id:response.id,
     title: data.title||'Untitled',
     description: data.description||'',
     severity: (data.severity||'LOW') as any,
-    incidentType: (data.incidentType||'OTHER') as any,
+    type: (data.type||'OTHER') as any,
     location: data.location||'',
     latitude: data.latitude,
     longitude: data.longitude,
@@ -102,12 +59,11 @@ export async function createIncident(data: Partial<Incident>){
     updates: [{ id: crypto.randomUUID(), at: new Date().toISOString(), by: data.reportedByName||'User', type:'COMMENT', message:'Incident created' }]
   
   }
-  all.unshift(incident); save(all)
-  return delay(incident)
+  return (incident)
 }
 
 export async function updateIncident(id:string, patch: Partial<Incident>){
-  const all = load()
+  const all =await load()
   const idx = all.findIndex(i=>i.id===id)
   if (idx===-1) throw new Error('Not found')
   const merged = { ...all[idx], ...patch }
@@ -117,7 +73,7 @@ export async function updateIncident(id:string, patch: Partial<Incident>){
 }
 
 export async function addComment(id:string, by:string, message:string){
-  const all = load()
+  const all =await load()
   const idx = all.findIndex(i=>i.id===id)
   if (idx===-1) throw new Error('Not found')
   all[idx].updates.unshift({ id: crypto.randomUUID(), at: new Date().toISOString(), by, type:'COMMENT', message })
@@ -159,6 +115,6 @@ export async function fetchSeed():Promise<{cars:Car[],users:Users[]}>{
       enqueueSnackbar(error.message,{variant:'error'})
       
     }
-    return {cars:[],users:[]}
+    throw new Error('error')
   }
 }

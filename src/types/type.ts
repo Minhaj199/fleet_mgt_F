@@ -31,7 +31,7 @@ export interface Incident {
   title: string
   description: string
   severity: Severity
-  incidentType: IncidentType
+  type: IncidentType
   location: string
   latitude?: number
   longitude?: number
@@ -52,7 +52,20 @@ export interface Incident {
   reportedAt:Date
   updates: { id:string; at:string; by:string; type:IncidentUpdateType; message:string }[]
 }
-
+ export type IncidentTable=Omit<Incident,'assignedTo'|'id'|'reportedAt'>&{id:string,assignedTo?:string|null,reportedAt:string}
+  export type IncidentDetails=Omit<Incident,'assignedTo'|'reportedAt'>&{assignedTo:string|null,reportedAt:string,tbId:string,images:string[],documents:string[]}
+export type IncidentRow={
+    id: number,
+    title: string,
+    description: string,
+    car: {model:string,make:string},
+    assignedTo?: null|string,
+    severity: Severity,
+    status: Status,
+    type:IncidentType,
+    location: string,
+    occurredAt: string,
+}
 
 /////car type//
 
