@@ -30,10 +30,10 @@ export const useUpdateIncident = () => {
   const qc = useQueryClient()
   return useMutation({
     mutationFn: ({ id, data }: { id: string; data: Partial<UpdateInput> }) => api.updateIncident(id, data),
+    
     onSuccess: (_d, vars) => {
       qc.invalidateQueries({ queryKey: queryKeys.incidents.lists() })
       qc.invalidateQueries({ queryKey: queryKeys.incidents.detail(String(vars.id)) })
-     
     }
   })
 }

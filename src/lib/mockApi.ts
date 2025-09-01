@@ -1,4 +1,4 @@
-import { Car, Incident, IncidentDetails, IncidentRow, Users } from "../types/type"
+import { Car, Incident, IncidentDetails, IncidentRow, UpdateInput, Users } from "../types/type"
 import { request } from "../utils/axiosUtil"
 import { enqueueSnackbar } from "notistack"
 import { rowIncidentFormater } from "../utils/incidentRowFormator"
@@ -8,7 +8,7 @@ import { rowIncidentFormater } from "../utils/incidentRowFormator"
 
 
 
-function delay<T>(data:T, ms=300){ return new Promise<T>(res=>setTimeout(()=>res(data), ms)) }
+
 
 export async function listIncidents({ page=1, limit=2, query='', cars='', severity='', type='',assignedTo='', startDate='', endDate='' }:any){
   const raw:{data:IncidentRow[],totoalCount:number} =await request({url:`/api/incidents?page=${page}&limit=${limit}&query=${query}&cars=${cars}&severity=${severity}&accidentOptions=${type}&assignedTo=${assignedTo}&startDate=${startDate}&endDate=${endDate}`})
@@ -59,10 +59,11 @@ export async function createIncident(data: Partial<Incident>){
   return (incident)
 }
 
-export async function updateIncident(id:string, patch: Partial<Incident>){
+export async function updateIncident(id:string, patch: Partial<UpdateInput>){
+  
+
   
   const idx = await request({url:'/api/incidents/'+id,method:'put',data:patch})
-
   return idx
 }
 
@@ -99,7 +100,7 @@ export async function getStats({ startDate='', endDate='', status='', severity='
     byDay[day] = (byDay[day]||0)+1
   })
   const trend = Object.entries(byDay).sort((a,b)=> a[0].localeCompare(b[0])).map(([label, value])=>({ label, value }))
-  return delay({ total, byStatus, bySeverity, openIncidents, avgResolutionTime, trend })
+  return ({ total, byStatus, bySeverity, openIncidents, avgResolutionTime, trend })
 }
 export async function fetchSeed():Promise<{cars:Car[],users:Users[]}>{
   try {

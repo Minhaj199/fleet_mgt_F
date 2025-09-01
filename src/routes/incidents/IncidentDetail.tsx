@@ -119,9 +119,9 @@ export default function IncidentDetail() {
                 Send
               </Button>
             </div>
-            <ul className="divide-y border rounded-xl">
+            <ul className="divide-y border rounded-xl max-h-72 overflow-y-auto">
               {i.updates?.map((u) => (
-                <li key={u.id} className="p-3 text-sm">
+                <li key={u.id} className="p-3 text-sm overflow-hidden">
                   <div className="flex items-center justify-between">
                     <span className="font-medium">{u.user.name}</span>
                     <span className="text-xs text-gray-500">

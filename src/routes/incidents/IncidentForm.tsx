@@ -67,9 +67,8 @@ export default function IncidentForm({onSubmit,defaultValues,isEdit = false}: {o
   defaultValues?: Partial<IncidentFormValues>;
   isEdit?: boolean;
 })
-
- {
-  console.log(defaultValues)
+{
+   console.log('value',defaultValues)
   const [step, setStep] = useState(0);
   const [seed,setSeed]=useState<{cars:{label:string,value:string}[],users:{label:string,value:string}[]}>({cars:[],users:[]})
     const {data}=useSeeds()
@@ -120,7 +119,7 @@ export default function IncidentForm({onSubmit,defaultValues,isEdit = false}: {o
             "Incident Details",
             "Location & Time",
             "Vehicle, Files & Cost",
-            ...(isEdit ? ["Edit Extras"] : []),
+            ...(isEdit ? ["Other"] : []),
           ].map((label, i) => (
             <div
               key={i}
@@ -357,7 +356,7 @@ export default function IncidentForm({onSubmit,defaultValues,isEdit = false}: {o
             <div>
               <label className="text-sm">Updated By</label>
               <Select
-                options={seed.users}
+                options={[...seed.users,{label:'select',value:''}]}
                 placeholder="Select user"
                 value={methods.watch("changedBy") as any}
                 onValueChange={(v) => methods.setValue("changedBy", v as any)}
@@ -367,7 +366,7 @@ export default function IncidentForm({onSubmit,defaultValues,isEdit = false}: {o
             <div>
               <label className="text-sm">Update Type</label>
               <Select
-                options={updateTypes}
+                options={[...updateTypes,{label:'select',value:''}]}
                 placeholder="Select type"
                 value={methods.watch("updateType") as any}
                 onValueChange={(v) => methods.setValue("updateType", v as any)}
@@ -377,7 +376,7 @@ export default function IncidentForm({onSubmit,defaultValues,isEdit = false}: {o
             <div>
               <label className="text-sm">Assigned To</label>
               <Select
-                options={assignees}
+                options={[...seed.users,{label:'select',value:''}]}
                 placeholder="Select assignee"
                 value={methods.watch("assignedTo") as any}
                 onValueChange={(v) => methods.setValue("assignedTo", v as any)}
@@ -387,7 +386,7 @@ export default function IncidentForm({onSubmit,defaultValues,isEdit = false}: {o
             <div>
               <label className="text-sm">Status</label>
               <Select
-                options={statuses}
+                options={[...statuses,{label:'select',value:''}]}
                 placeholder="Select status"
                 value={methods.watch("status") as any}
                 onValueChange={(v) => methods.setValue("status", v as any)}
