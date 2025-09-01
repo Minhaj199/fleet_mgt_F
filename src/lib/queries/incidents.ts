@@ -2,7 +2,10 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { queryKeys } from '../query-keys'
 import * as api from '../mockApi'
-import { Incident, UpdateInput } from '../../types/type'; 
+import { Incident, IncidetInputs, UpdateInput } from '../../types/type'; 
+import { useLoadingContext } from '../../context/context';
+import { enqueueSnackbar } from 'notistack';
+import { useNavigate } from 'react-router-dom';
 
 export interface Filters { page?: number;status?:string, limit?: number; query?: string;assignedTo?:string ,cars?: string; severity?: string; type?: string; startDate?: string; endDate?: string }
 
@@ -23,17 +26,32 @@ export const useSeeds = () =>useQuery({queryKey:queryKeys.incidents.seeds(),quer
 
 export const useCreateIncident = () => {
   const qc = useQueryClient()
-  return useMutation({ mutationFn: (data: Partial<Incident>) => api.createIncident(data), onSuccess: () => qc.invalidateQueries({ queryKey: queryKeys.incidents.lists() }) })
+    const {setLoading}=useLoadingContext()
+  return useMutation({ mutationFn: (data: Partial<IncidetInputs>) => api.createIncident(data),onMutate:()=>{
+    setLoading(true)
+  },onSuccess: () =>{
+    qc.invalidateQueries({ queryKey: queryKeys.incidents.lists() })
+    setLoading(false)
+  }    
+  ,onError:(error)=>{
+    enqueueSnackbar(error.message)
+    console.log(error)
+    setLoading(false)
+  }} )
 }
 
 export const useUpdateIncident = () => {
   const qc = useQueryClient()
   return useMutation({
     mutationFn: ({ id, data }: { id: string; data: Partial<UpdateInput> }) => api.updateIncident(id, data),
-    
+    onMutate:(data)=>{
+    console.log('draft',data)  
+    },
     onSuccess: (_d, vars) => {
+      console.log('updated',_d)
       qc.invalidateQueries({ queryKey: queryKeys.incidents.lists() })
-      qc.invalidateQueries({ queryKey: queryKeys.incidents.detail(String(vars.id)) })
+      qc.invalidateQueries({ queryKey: queryKeys.incidents.stats() })
+      
     }
   })
 }

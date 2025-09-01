@@ -12,6 +12,7 @@ import IncidentDetail from './routes/incidents/IncidentDetail'
 import IncidentEdit from './routes/incidents/IncidentEdit'
 import IncidentStats from './routes/incidents/IncidentStats'
 import { SnackbarProvider} from 'notistack'
+import { IncidentProvider } from './context/context'
 
 
 const router = createBrowserRouter([
@@ -32,8 +33,11 @@ ReactDOM.createRoot(document.getElementById('root')!).render(
 
   
     <QueryClientProvider client={qc}>
+      <IncidentProvider>
       <RouterProvider router={router} />
       <Toaster />
+
+      </IncidentProvider>
     </QueryClientProvider>
       </SnackbarProvider>
   </React.StrictMode>

@@ -6,84 +6,98 @@ import { Textarea } from "../../components/ui/textarea";
 import { Button } from "../../components/ui/button";
 import { Select } from "../../components/ui/select";
 import { useEffect, useState } from "react";
-import type { Attachment} from "../../types/type";
+import type { Attachment, IncidentType, Status } from "../../types/type";
 import {
   DetailsSchema,
   EditExtrasSchema,
   LocationSchema,
   VehicleSchema,
-} from "../../utils/zodSchema";
-import {
-  AccidentOptions,
-  assignees,
-  severities,
-  statuses,
-  updateTypes,
-} from "../../data";
+} from "../../lib/zodSchema";
+import { AccidentOptions, severities, statuses, updateTypes } from "../../data";
 import { IncidentFormValues } from "../../types/type";
-import { handleUpload } from "../../utils/cloudinary";
+import { handleUpload } from "../../lib/cloudinary";
 import { useSeeds } from "../../lib/queries/incidents";
 import { enqueueSnackbar } from "notistack";
-async function filesToAttachments(files: FileList | null): Promise<Attachment[]> {
-
-
+import LoadingAnimations from "../../components/ui/loading";
+import { useLoadingContext } from "../../context/context";
+async function filesToAttachments(
+  files: FileList | null
+): Promise<Attachment[]> {
   if (!files) return [];
   const out: Attachment[] = [];
-  
+
   for (const f of Array.from(files)) {
     const maxSize = 5 * 1024 * 1024;
-    const allowedTypes = ["application/pdf", "image/jpeg", "image/png", "image/jpg"];
-    if(f.size>maxSize){
-      enqueueSnackbar('max limit is 5mp',{variant:'error'})
-      return out
-    }else if(!allowedTypes.includes(f.type)){
-     enqueueSnackbar('not valid file formate',{variant:'error'})
-      return out
+    const allowedTypes = [
+      "application/pdf",
+      "image/jpeg",
+      "image/png",
+      "image/jpg",
+    ];
+    if (f.size > maxSize) {
+      enqueueSnackbar("max limit is 5mp", { variant: "error" });
+      return out;
+    } else if (!allowedTypes.includes(f.type)) {
+      enqueueSnackbar("not valid file formate", { variant: "error" });
+      return out;
     }
-  
+
     try {
-      const data:string= await handleUpload(f)
-      if(typeof data==='string'&&data.trim()){
-       
+      const data: string = await handleUpload(f);
+      if (typeof data === "string" && data.trim()) {
         out.push({
-      id: crypto.randomUUID(),
-      name: f.name,
-      type: f.type,
-      size: f.size,
-      dataUrl:data
-    });
+          id: crypto.randomUUID(),
+          name: f.name,
+          type: f.type,
+          size: f.size,
+          dataUrl: data,
+        });
       }
-    
     } catch (error) {
-      
-     enqueueSnackbar('internal server error',{variant:'error'})
+      enqueueSnackbar("internal server error", { variant: "error" });
     }
-   
   }
   return out;
 }
 
-export default function IncidentForm({onSubmit,defaultValues,isEdit = false}: {onSubmit: (v: IncidentFormValues) => void;
+export default function IncidentForm({onSubmit,defaultValues,isEdit = false,isPending}: {
+  onSubmit: (v: IncidentFormValues) => void;
   defaultValues?: Partial<IncidentFormValues>;
   isEdit?: boolean;
-})
-{
-   console.log('value',defaultValues)
+  isPending:boolean
+}) {
+  const [fileinputLoading, setFileinputLoading] = useState(false);
+  const {setLoading}=useLoadingContext()
   const [step, setStep] = useState(0);
-  const [seed,setSeed]=useState<{cars:{label:string,value:string}[],users:{label:string,value:string}[]}>({cars:[],users:[]})
-    const {data}=useSeeds()
+  const [seed, setSeed] = useState<{
+    cars: { label: string; value: string }[];
+    users: { label: string; value: string }[];
+  }>({ cars: [], users: [] });
+  const { data } = useSeeds();
 
-  const methods = useForm<IncidentFormValues>({resolver: zodResolver(DetailsSchema.merge(LocationSchema).merge(VehicleSchema)
+  const methods = useForm<IncidentFormValues>({
+    resolver: zodResolver(
+      DetailsSchema.merge(LocationSchema)
+        .merge(VehicleSchema)
         .merge(EditExtrasSchema)
     ),
     defaultValues: { ...defaultValues },
   });
 
-  useEffect(()=>{
-    if(data?.cars.length&&data.users.length){
-      setSeed({cars:data.cars.map(el=>({label:el.model,value:String(el.id)})),users:data.users.map(el=>({label:el.name,value:String(el.id)}))})
+  useEffect(() => {
+    if (data?.cars.length && data.users.length) {
+      setSeed({
+        cars: data.cars.map((el) => ({
+          label: el.model,
+          value: String(el.id),
+        })),
+        users: data.users.map((el) => ({
+          label: el.name,
+          value: String(el.id),
+        })),
+      });
     }
-  },[data])
+  }, [data]);
 
   const next = async () => {
     const sections = [
@@ -96,22 +110,32 @@ export default function IncidentForm({onSubmit,defaultValues,isEdit = false}: {o
     const parse = sections[step].safeParse(data);
     if (!parse.success) {
       methods.trigger();
-      enqueueSnackbar('please fill required fields',{variant:'warning'})
+      enqueueSnackbar("please fill field properly", { variant: "warning" });
       return;
     }
     setStep((s) => Math.min(sections.length - 1, s + 1));
   };
   const prev = () => setStep((s) => Math.max(0, s - 1));
- function handleOnSubmit(){
-  const parse=VehicleSchema.safeParse(methods.getValues())
-  if(!parse.success){
-    methods.trigger()
-    enqueueSnackbar('please fill required fields',{variant:'warning'})
-    return
+  function handleOnSubmit() {
+    const combinedSchemaAdd =
+      DetailsSchema.merge(LocationSchema).merge(VehicleSchema);
+    const combinedSchemaEdit = DetailsSchema.merge(LocationSchema)
+      .merge(VehicleSchema)
+      .merge(EditExtrasSchema);
+    const parse = !isEdit
+      ? combinedSchemaAdd.safeParse(methods.getValues())
+      : combinedSchemaEdit.safeParse(methods.getValues());
+    console.log(parse);
+    if (!parse.success) {
+      methods.trigger();
+      enqueueSnackbar("please fill required fields", { variant: "warning" });
+    } else {
+      onSubmit(methods.getValues());
+    }
   }
-  onSubmit(methods.getValues())
- }
   return (
+    <>
+    
     <FormProvider {...methods}>
       <div className="space-y-6">
         <div className="flex items-center gap-2 text-sm">
@@ -137,7 +161,6 @@ export default function IncidentForm({onSubmit,defaultValues,isEdit = false}: {o
             <div>
               <label className="text-sm">Title</label>
               <Input
-            
                 {...methods.register("title")}
                 placeholder="Incident title"
               />
@@ -148,13 +171,16 @@ export default function IncidentForm({onSubmit,defaultValues,isEdit = false}: {o
             <div>
               <label className="text-sm">Type</label>
               <Select
-
-                options={[...AccidentOptions,{label:'type',value:''}]}
+                options={[...AccidentOptions, { label: "type", value: "" }]}
                 placeholder="Select type"
-                value={methods.watch("incidentType") as any}
-               
+                value={methods.watch("incidentType")}
                 onValueChange={(v) =>
-                  methods.setValue("incidentType", v as any)
+                  methods.setValue(
+                    "incidentType",
+                    v === ""
+                      ? methods.getValues().incidentType
+                      : (v as IncidentType)
+                  )
                 }
               />
               <p className="text-xs text-red-600">
@@ -164,7 +190,6 @@ export default function IncidentForm({onSubmit,defaultValues,isEdit = false}: {o
             <div className="md:col-span-2">
               <label className="text-sm">Description</label>
               <Textarea
-          
                 rows={4}
                 {...methods.register("description")}
                 placeholder="Describe incident"
@@ -177,10 +202,9 @@ export default function IncidentForm({onSubmit,defaultValues,isEdit = false}: {o
             <div>
               <label className="text-sm">Severity</label>
               <Select
-                options={severities}
+                options={[...severities, { label: "select", value: "" }]}
                 placeholder="Select severity"
-                value={methods.watch("severity") as any}
-               
+                value={methods.watch("severity")}
                 onValueChange={(v) => methods.setValue("severity", v as any)}
               />
               <p className="text-xs text-red-600">
@@ -194,7 +218,7 @@ export default function IncidentForm({onSubmit,defaultValues,isEdit = false}: {o
           <section className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
               <label className="text-sm">Location</label>
-              <Input {...methods.register("location")}  placeholder="Location" />
+              <Input {...methods.register("location")} placeholder="Location" />
               <p className="text-xs text-red-600">
                 {methods.formState.errors.location?.message}
               </p>
@@ -233,10 +257,9 @@ export default function IncidentForm({onSubmit,defaultValues,isEdit = false}: {o
             <div>
               <label className="text-sm">Car</label>
               <Select
-                options={[{label:'all',value:''},...seed.cars]}
+                options={[{ label: "all", value: "" }, ...seed.cars]}
                 placeholder="Select car"
                 value={methods.watch("carName") as any}
-                
                 onValueChange={(v) => methods.setValue("carName", v as any)}
               />
               <p className="text-xs text-red-600">
@@ -247,11 +270,9 @@ export default function IncidentForm({onSubmit,defaultValues,isEdit = false}: {o
             <div>
               <label className="text-sm">Reported By</label>
               <Select
-                
-                options={[{label:'users',value:''},...seed.users]}
+                options={[{ label: "users", value: "" }, ...seed.users]}
                 placeholder="Select reporter"
                 value={methods.watch("reportedByName") as any}
-               
                 onValueChange={(v) =>
                   methods.setValue("reportedByName", v as any)
                 }
@@ -261,15 +282,12 @@ export default function IncidentForm({onSubmit,defaultValues,isEdit = false}: {o
               </p>
             </div>
 
-
-
-
-
-
-
-
-
-            <div className="md:col-span-2">
+            <div className="md:col-span-2 border  relative">
+              {fileinputLoading && (
+                <div className="z-40 flex justify-center items-center  w-full h-full absolute">
+                  <LoadingAnimations size="sm" variant="spinner" />
+                </div>
+              )}
               <label className="text-sm">
                 Attachments (images/pdf) (max 5)
               </label>
@@ -280,22 +298,30 @@ export default function IncidentForm({onSubmit,defaultValues,isEdit = false}: {o
                   const existing =
                     (methods.getValues("attachments") as Attachment[]) || [];
                   if (existing.length >= 5) {
-                    alert("You can only upload up to 5 attachments.");
+                    enqueueSnackbar(
+                      "You can only upload up to 5 attachments.",
+                      { variant: "info" }
+                    );
                     return;
                   }
+                  try {
+                    setFileinputLoading(true);
+                    const atts = await filesToAttachments(e.target.files);
 
-                  const atts = await filesToAttachments(e.target.files);
+                    // merge but keep only 5
+                    const updated = [...existing, ...atts].slice(0, 5);
+                    methods.setValue("attachments", updated);
 
-                  // merge but keep only 5
-                  const updated = [...existing, ...atts].slice(0, 5);
-                  methods.setValue("attachments", updated);
-
-                  // reset input so the same file can be re-uploaded if removed
-                  e.target.value = "";
+                    // reset input so the same file can be re-uploaded if removed
+                    e.target.value = "";
+                  } catch (error) {
+                  } finally {
+                    setFileinputLoading(false);
+                  }
                 }}
               />
 
-              <div className="mt-2 grid grid-cols-2 md:grid-cols-4 gap-2">
+              <div className="mt-2 grid grid-cols-2 md:grid-cols-4 gap-2 z-4">
                 {(
                   methods.watch("attachments") as Attachment[] | undefined
                 )?.map((a, idx, arr) => (
@@ -322,9 +348,10 @@ export default function IncidentForm({onSubmit,defaultValues,isEdit = false}: {o
                         className="h-24 w-full object-cover rounded"
                       />
                     ) : (
-                      <div  className="h-24 flex items-center justify-center bg-gray-50 rounded">
-                        <a target="_blank" href={a.dataUrl}>{a.name}</a>
-                        
+                      <div className="h-24 flex items-center justify-center bg-gray-50 rounded">
+                        <a target="_blank" href={a.dataUrl}>
+                          {a.name}
+                        </a>
                       </div>
                     )}
                     <div className="truncate">{a.name}</div>
@@ -341,12 +368,13 @@ export default function IncidentForm({onSubmit,defaultValues,isEdit = false}: {o
             </div>
 
             <div>
-              <label className="text-sm">Odometer</label>
-              <Input type="number" {...methods.register("odometer")} />
-            </div>
-            <div>
-              <label className="text-sm">Estimated Cost</label>
-              <Input type="number" {...methods.register("estimatedCost")} />
+              <div>
+                <label className="text-sm">Estimated Cost</label>
+                <Input type="number" {...methods.register("estimatedCost")} />
+              </div>
+              <p className="text-xs text-red-600">
+                {methods.formState.errors.estimatedCost?.message}
+              </p>
             </div>
           </section>
         )}
@@ -356,40 +384,45 @@ export default function IncidentForm({onSubmit,defaultValues,isEdit = false}: {o
             <div>
               <label className="text-sm">Updated By</label>
               <Select
-                options={[...seed.users,{label:'select',value:''}]}
+                options={[...seed.users, { label: "select", value: "" }]}
                 placeholder="Select user"
-                value={methods.watch("changedBy") as any}
-                onValueChange={(v) => methods.setValue("changedBy", v as any)}
+                value={methods.watch("changedBy")}
+                onValueChange={(v) => methods.setValue("changedBy", v)}
               />
             </div>
 
             <div>
               <label className="text-sm">Update Type</label>
               <Select
-                options={[...updateTypes,{label:'select',value:''}]}
+                options={[...updateTypes, { label: "select", value: "" }]}
                 placeholder="Select type"
-                value={methods.watch("updateType") as any}
-                onValueChange={(v) => methods.setValue("updateType", v as any)}
+                value={methods.watch("updateType")}
+                onValueChange={(v) => methods.setValue("updateType", v)}
               />
             </div>
 
             <div>
               <label className="text-sm">Assigned To</label>
               <Select
-                options={[...seed.users,{label:'select',value:''}]}
+                options={[...seed.users, { label: "select", value: "" }]}
                 placeholder="Select assignee"
-                value={methods.watch("assignedTo") as any}
-                onValueChange={(v) => methods.setValue("assignedTo", v as any)}
+                value={methods.watch("assignedTo")}
+                onValueChange={(v) => methods.setValue("assignedTo", v)}
               />
             </div>
 
             <div>
               <label className="text-sm">Status</label>
               <Select
-                options={[...statuses,{label:'select',value:''}]}
+                options={[...statuses, { label: "select", value: "" }]}
                 placeholder="Select status"
-                value={methods.watch("status") as any}
-                onValueChange={(v) => methods.setValue("status", v as any)}
+                value={methods.watch("status")}
+                onValueChange={(v) => {
+                  methods.setValue(
+                    "status",
+                    v === "" ? methods.getValues().status : (v as Status)
+                  );
+                }}
               />
             </div>
 
@@ -412,11 +445,13 @@ export default function IncidentForm({onSubmit,defaultValues,isEdit = false}: {o
           {step < (isEdit ? 3 : 2) ? (
             <Button onClick={next}>Next</Button>
           ) : (
-           
-            <Button type="button" onClick={handleOnSubmit}>Submit</Button>
+            <Button type="button" onClick={handleOnSubmit}>
+              Submit
+            </Button>
           )}
         </div>
       </div>
     </FormProvider>
+    </>
   );
 }

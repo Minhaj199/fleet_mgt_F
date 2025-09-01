@@ -1,5 +1,6 @@
 import z from "zod"
-import { DetailsSchema, EditExtrasSchema, LocationSchema, VehicleSchema } from "../utils/zodSchema"
+import { DetailsSchema, EditExtrasSchema, LocationSchema, VehicleSchema } from "../lib/zodSchema"
+import { Dispatch, SetStateAction } from "react"
 
 export type IncidentFormValues = z.infer<typeof DetailsSchema> & z.infer<typeof LocationSchema> & z.infer<typeof VehicleSchema> & z.infer<typeof EditExtrasSchema>
 export type Severity = 'LOW' | 'MEDIUM' | 'HIGH'|'CRITICAL'
@@ -42,20 +43,23 @@ export interface Incident {
   reportedByName: string
   attachments: Attachment[]
   images: string[]
-  odometer?: number
   estimatedCost?: number
   actualCost?: number
   assignedTo?:{name:string},
   status: Status
   assignee?: string
   resolvedAt?: string,
-  reportedAt:Date
+  reportedAt:Date|string
   updates: { id:string; createdAt:string; user:{name:string}; updateType:IncidentUpdateType; message:string }[]
 }
  export type IncidentTable=Omit<Incident,'assignedTo'|'id'|'reportedAt'>&{id:string,assignedTo?:{name:string},reportedAt:string}
   export type IncidentDetails=Omit<Incident,'assignedTo'|'reportedAt'>&{car:{make:string,model:string},assignedTo?:{name:string,id:number},reportedAt:string,tbId:string,images:string[],documents:string[]}
    type WithourAssinnedTo=Omit<Incident,'assignedTo'>
-  export type UpdateInput = WithourAssinnedTo& {
+  export type IncidetInputs=WithourAssinnedTo&{
+    assignedTo:string
+  }
+  
+   export type UpdateInput = WithourAssinnedTo& {
     from:UPDATE_FROM
     userId:string
     assignedTo:string
@@ -95,5 +99,11 @@ export type Users={
     id: number,
     name: string,
     email: string,
+}
+
+
+export type ContextType={
+  isLoading:boolean,
+  setLoading:Dispatch<SetStateAction<boolean>>
 }
 

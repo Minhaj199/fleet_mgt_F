@@ -1,5 +1,5 @@
-import { Car, Incident, IncidentDetails, IncidentRow, UpdateInput, Users } from "../types/type"
-import { request } from "../utils/axiosUtil"
+import { Car, Incident, IncidentDetails, IncidentRow, IncidetInputs, UpdateInput, Users } from "../types/type"
+import { request } from "./axiosUtil"
 import { enqueueSnackbar } from "notistack"
 import { rowIncidentFormater } from "../utils/incidentRowFormator"
 
@@ -24,8 +24,8 @@ export async function getIncident(id:string){
   return (item)
 }
 
-export async function createIncident(data: Partial<Incident>){
-  type ProcessedData=Omit<Partial<Incident>,'attachments'>&{images:string[],documents:string[]}
+export async function createIncident(data: Partial<IncidetInputs>){
+  type ProcessedData=Omit<Partial<IncidetInputs>,'attachments'>&{images:string[],documents:string[]}
   let processedData:null|ProcessedData=null
   if(data.attachments?.length){
     processedData={...data,images:data.attachments.filter(el=>el.type==='image/jpeg').map(el=>el.dataUrl),documents:data.attachments.filter(el=>el.type==='application/pdf').map(el=>el.dataUrl)}
@@ -47,7 +47,6 @@ export async function createIncident(data: Partial<Incident>){
     reportedByName: data.reportedByName||'',
     attachments: data.attachments || [],
     images: (data.attachments||[]).filter(a=>a.type.startsWith('image/')).map(a=>a.dataUrl),
-    odometer: data.odometer,
     estimatedCost: data.estimatedCost,
     actualCost: data.actualCost,
     status: 'PENDING',
