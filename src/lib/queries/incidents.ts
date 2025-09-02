@@ -4,6 +4,7 @@ import * as api from '../mockApi'
 import { Incident, IncidentTable, IncidetInputs, UpdateInput } from '../../types/type'; 
 import { useLoadingContext } from '../../context/context';
 import { enqueueSnackbar } from 'notistack';
+import { useNavigate } from 'react-router-dom';
 
 export interface Filters { page?: number;status?:string, limit?: number; query?: string;assignedTo?:string ,cars?: string; severity?: string; type?: string; startDate?: string; endDate?: string }
 
@@ -42,6 +43,7 @@ export const useCreateIncident = () => {
 
 export const useUpdateIncident = () => {
   const qc = useQueryClient()
+  const nav = useNavigate()
   return useMutation({
     mutationFn: ({ id, data }: { id: string; data: Partial<UpdateInput> }) => api.updateIncident(id, data),
     onMutate:async(newData)=>{
@@ -80,9 +82,11 @@ export const useUpdateIncident = () => {
     },
   
     onSuccess: (_d, vars) => {
-     
       qc.invalidateQueries({ queryKey: queryKeys.incidents.lists() })
       qc.invalidateQueries({ queryKey: queryKeys.incidents.stats() })
+      if(vars.data.from=='MAIN_UPDATE'){
+        nav(`/incidents`)
+      }
       
     },
     onError: (_error, newData, context) => {

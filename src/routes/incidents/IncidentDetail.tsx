@@ -9,6 +9,7 @@ export default function IncidentDetail() {
   const {i_id = '' } = useParams ()
 
   const { data={title:'',id:'',carName:'',images:[],documents:[],carId:'',description:'',occurredAt:'',car:{model:''},status:'PENDING',severity:'LOW',type:'OTHER',updates:[],assignedTo:{name:''},location:1,latitude:'',longitude:'',reportedAt:'',reportedByName:'',estimatedCost:'',actualCost:''} } = useIncidentDetail(i_id!)
+  console.log(data)
   const [msg, setMsg] = useState('')
   const add = useAddIncidentComment()
 
@@ -167,7 +168,7 @@ export default function IncidentDetail() {
           </div>
           <div>
             <span className="font-semibold">Reported By</span>
-            <div className="text-sm text-gray-700">{i.reportedByName}</div>
+            <div className="text-sm text-gray-700">{("reportedBy" in i&&i.reportedBy)?i.reportedBy.name:''}</div>
           </div>
           <div>
             <span className="font-semibold">Costs</span>

@@ -55,7 +55,7 @@ export interface Incident {
   updates: { id:string; createdAt:string; user:{name:string}; updateType:IncidentUpdateType; message:string }[]
 }
  export type IncidentTable=Omit<Incident,'assignedTo'|'id'|'reportedAt'>&{id:string,assignedTo?:{name:string,id:string},reportedAt:string}
-  export type IncidentDetails=Omit<Incident,'assignedTo'|'reportedAt'>&{car:{make:string,model:string},resolutionNotes?:string,assignedTo?:{name:string,id:number},reportedAt:string,tbId:string,images:string[],documents:string[]}
+  export type IncidentDetails=Omit<Incident,'assignedTo'|'reportedAt'|'reportedBy'>&{car:{make:string,model:string},reportedBy:{name:string},resolutionNotes?:string,assignedTo?:{name:string,id:number},reportedAt:string,tbId:string,images:string[],documents:string[]}
    type WithourAssinnedTo=Omit<Incident,'assignedTo'>
   export type IncidetInputs=WithourAssinnedTo&{
     assignedTo:string|{name:string,id:string}

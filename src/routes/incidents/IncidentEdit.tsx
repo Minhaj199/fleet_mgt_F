@@ -21,7 +21,7 @@ export default function IncidentEdit(){
       attachments:[...data.images?.map((el,index)=>({dataUrl:el,name:index,type:'image/jpeg'})),...data.documents?.map((el)=>({dataUrl:el,name:'document',type:'application/pdf'}))]
     }} onSubmit={(v: IncidentFormValuesType)=>{
       update.mutate({ id, data: { ...data, ...v,updates:[],occurredAt:(v.occurredAt===data.occurredAt.slice(0,16))?data.occurredAt:v.occurredAt,images:v.attachments?.filter(el=>el.type==='image/jpeg').map(el=>el.dataUrl),documents:v.attachments?.filter(el=>el.type==='application/pdf').map(el=>el.dataUrl),from:'MAIN_UPDATE',attachments:[]} },
-       {onSuccess: ()=> nav(`/incidents/${id}`),onError:(err)=>{
+       {onError:(err)=>{
         enqueueSnackbar(err.message)
       }})
     }}/>

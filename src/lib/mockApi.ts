@@ -29,7 +29,7 @@ export async function listIncidents({
 
 
 export async function getIncident(id:string){
-  const item:IncidentDetails =  await request({url:`/api/incidents?from=get-incident&id=${id}`})
+  const item:IncidentDetails  =  await request({url:`/api/incidents?from=get-incident&id=${id}`})
   if(!item) throw new Error('Not found')
   return (item)
 }
