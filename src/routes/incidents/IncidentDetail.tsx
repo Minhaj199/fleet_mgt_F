@@ -17,7 +17,7 @@ export default function IncidentDetail() {
   const i = data
   return (
    
-    <div className="space-y-6">
+    <div className=" space-y-6 overflow-hidden " >
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
@@ -62,7 +62,7 @@ export default function IncidentDetail() {
       </div>
 
       {/* Body */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 ">
         {/* Main Content */}
         <div className="md:col-span-2 space-y-4">
           {/* Description */}
@@ -72,7 +72,7 @@ export default function IncidentDetail() {
           </section>
 
           {/* Attachments */}
-          <section className="space-y-2">
+          <section className="space-y-2 overflow-hidden">
             <h3 className="font-semibold">Attachments</h3>
             <div className="flex flex-wrap gap-2">
               {i.images?.map((a) =>
