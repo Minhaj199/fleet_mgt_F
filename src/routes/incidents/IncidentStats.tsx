@@ -24,8 +24,17 @@ export default function IncidentStats(){
   return (
     <div className="space-y-6">
       <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
-        <Select placeholder="All Status" value={status} onValueChange={setStatus} options={[{label:'All', value:''},{label:'Pending', value:'PENDING'},{label:'In Progress', value:'IN_PROGRESS'},{label:'Resolved', value:'RESOLVED'}]} />
-        <Select placeholder="All Severity" value={severity} onValueChange={setSeverity} options={[{label:'All', value:''},{label:'Low', value:'LOW'},{label:'Medium', value:'MEDIUM'},{label:'High', value:'HIGH'}]} />
+        <Select placeholder="All Status" value={status} onValueChange={(v)=>{
+          if(typeof v==='string'){
+            setStatus(v)
+            }
+        }} options={[{label:'All', value:''},{label:'Pending', value:'PENDING'},{label:'In Progress', value:'IN_PROGRESS'},{label:'Resolved', value:'RESOLVED'}]} />
+        <Select placeholder="All Severity" value={severity} onValueChange={(v)=>{
+          if(typeof v==='string'){
+            setSeverity(v)
+            }
+        
+        }} options={[{label:'All', value:''},{label:'Low', value:'LOW'},{label:'Medium', value:'MEDIUM'},{label:'High', value:'HIGH'}]} />
         <Input type="date" value={startDate} onChange={e=>setStart(e.target.value)} />
         <Input type="date" value={endDate} onChange={e=>setEnd(e.target.value)} />
       </div>

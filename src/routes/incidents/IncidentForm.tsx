@@ -6,7 +6,7 @@ import { Textarea } from "../../components/ui/textarea";
 import { Button } from "../../components/ui/button";
 import { Select } from "../../components/ui/select";
 import { useEffect, useState } from "react";
-import type { Attachment, IncidentType, Status } from "../../types/type";
+import type { Attachment, IncidentFormValuesType, IncidentType, Status } from "../../types/type";
 import {
   DetailsSchema,
   EditExtrasSchema,
@@ -60,11 +60,10 @@ async function filesToAttachments(
   return out;
 }
 
-export default function IncidentForm({onSubmit,defaultValues,isEdit = false,isPending}: {
-  onSubmit: (v: IncidentFormValues) => void;
-  defaultValues?: Partial<IncidentFormValues>;
+export default function IncidentForm({onSubmit,defaultValues,isEdit = false}: {
+  onSubmit: (v: IncidentFormValuesType) => void;
+  defaultValues?: Partial<IncidentFormValuesType>;
   isEdit?: boolean;
-  isPending:boolean
 }) {
   const [fileinputLoading, setFileinputLoading] = useState(false);
   const {setLoading}=useLoadingContext()
@@ -75,7 +74,7 @@ export default function IncidentForm({onSubmit,defaultValues,isEdit = false,isPe
   }>({ cars: [], users: [] });
   const { data } = useSeeds();
 
-  const methods = useForm<IncidentFormValues>({
+  const methods = useForm<IncidentFormValuesType>({
     resolver: zodResolver(
       DetailsSchema.merge(LocationSchema)
         .merge(VehicleSchema)
@@ -121,12 +120,13 @@ export default function IncidentForm({onSubmit,defaultValues,isEdit = false,isPe
       DetailsSchema.merge(LocationSchema).merge(VehicleSchema);
     const combinedSchemaEdit = DetailsSchema.merge(LocationSchema)
       .merge(VehicleSchema)
-      .merge(EditExtrasSchema);
+      .merge(EditExtrasSchema)
     const parse = !isEdit
       ? combinedSchemaAdd.safeParse(methods.getValues())
       : combinedSchemaEdit.safeParse(methods.getValues());
-    console.log(parse);
+ 
     if (!parse.success) {
+ 
       methods.trigger();
       enqueueSnackbar("please fill required fields", { variant: "warning" });
     } else {
@@ -382,32 +382,29 @@ export default function IncidentForm({onSubmit,defaultValues,isEdit = false,isPe
         {isEdit && step === 3 && (
           <section className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
+            <div>
               <label className="text-sm">Updated By</label>
               <Select
                 options={[...seed.users, { label: "select", value: "" }]}
                 placeholder="Select user"
                 value={methods.watch("changedBy")}
-                onValueChange={(v) => methods.setValue("changedBy", v)}
+                onValueChange={(v) => methods.setValue("changedBy", (v as any))}
               />
+            </div>
+           <p className="text-xs text-red-600">
+                {methods.formState.errors.changedBy?.message}
+              </p>
             </div>
 
-            <div>
-              <label className="text-sm">Update Type</label>
-              <Select
-                options={[...updateTypes, { label: "select", value: "" }]}
-                placeholder="Select type"
-                value={methods.watch("updateType")}
-                onValueChange={(v) => methods.setValue("updateType", v)}
-              />
-            </div>
+            
 
             <div>
               <label className="text-sm">Assigned To</label>
               <Select
                 options={[...seed.users, { label: "select", value: "" }]}
                 placeholder="Select assignee"
-                value={methods.watch("assignedTo")}
-                onValueChange={(v) => methods.setValue("assignedTo", v)}
+                value={((methods.watch("assignedTo") as any))}
+                onValueChange={(v) => methods.setValue("assignedTo", (v as any))}
               />
             </div>
 
@@ -427,8 +424,8 @@ export default function IncidentForm({onSubmit,defaultValues,isEdit = false,isPe
             </div>
 
             <div className="md:col-span-2">
-              <label className="text-sm">Log message</label>
-              <Textarea rows={3} {...methods.register("logMessage")} />
+              <label className="text-sm">resolution Note</label>
+              <Textarea disabled={methods.watch('status')!=='RESOLVED'} rows={3} {...methods.register("resolution_Note")} />
             </div>
 
             <div>

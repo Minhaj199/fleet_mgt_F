@@ -37,7 +37,7 @@ export const VehicleSchema = z.object({
 ),
 })
 export const EditExtrasSchema = z.object({
-  changedBy: z.string().optional(),
+  changedBy: z.string(),
   updateType: z.string().optional(),
   assignedTo: z.string().optional(),
   status: z.enum([
@@ -47,6 +47,6 @@ export const EditExtrasSchema = z.object({
   'CLOSED',
   'CANCELLED'
 ]).optional(),
-  logMessage: z.string().optional(),
+  resolution_Note: z.string().optional(),
   actualCost: z.preprocess(v=> v===''? undefined : Number(v), z.number().optional()),
 })

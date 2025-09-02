@@ -1,8 +1,10 @@
 import z from "zod"
 import { DetailsSchema, EditExtrasSchema, LocationSchema, VehicleSchema } from "../lib/zodSchema"
 import { Dispatch, SetStateAction } from "react"
+import { Filters } from "../lib/queries/incidents"
 
 export type IncidentFormValues = z.infer<typeof DetailsSchema> & z.infer<typeof LocationSchema> & z.infer<typeof VehicleSchema> & z.infer<typeof EditExtrasSchema>
+
 export type Severity = 'LOW' | 'MEDIUM' | 'HIGH'|'CRITICAL'
 export type IncidentType = 'ACCIDENT'
   |'BREAKDOWN'
@@ -18,7 +20,7 @@ export type IncidentUpdateType='STATUS_CHANGE'|
   'COMMENT'|
   'COST_UPDATE'|
   'RESOLUTION'
-
+export type IncidentFormValuesType=Omit<IncidentFormValues,'assignedTo'>&{assignedTo:string|{name:string,id:string}}
 export interface Attachment {
   id: string
   name: string
@@ -45,24 +47,25 @@ export interface Incident {
   images: string[]
   estimatedCost?: number
   actualCost?: number
-  assignedTo?:{name:string},
+  assignedTo?:{name:string,id:string}|string,
   status: Status
   assignee?: string
   resolvedAt?: string,
   reportedAt:Date|string
   updates: { id:string; createdAt:string; user:{name:string}; updateType:IncidentUpdateType; message:string }[]
 }
- export type IncidentTable=Omit<Incident,'assignedTo'|'id'|'reportedAt'>&{id:string,assignedTo?:{name:string},reportedAt:string}
-  export type IncidentDetails=Omit<Incident,'assignedTo'|'reportedAt'>&{car:{make:string,model:string},assignedTo?:{name:string,id:number},reportedAt:string,tbId:string,images:string[],documents:string[]}
+ export type IncidentTable=Omit<Incident,'assignedTo'|'id'|'reportedAt'>&{id:string,assignedTo?:{name:string,id:string},reportedAt:string}
+  export type IncidentDetails=Omit<Incident,'assignedTo'|'reportedAt'>&{car:{make:string,model:string},resolutionNotes?:string,assignedTo?:{name:string,id:number},reportedAt:string,tbId:string,images:string[],documents:string[]}
    type WithourAssinnedTo=Omit<Incident,'assignedTo'>
   export type IncidetInputs=WithourAssinnedTo&{
-    assignedTo:string
+    assignedTo:string|{name:string,id:string}
   }
   
    export type UpdateInput = WithourAssinnedTo& {
     from:UPDATE_FROM
+    filters?:Filters
     userId:string
-    assignedTo:string
+    assignedTo?:{name:string,id:string}|string
     documents:string[]
   }
 
@@ -74,13 +77,14 @@ type UPDATE_FROM='INLINE'|'MAIN_UPDATE'
     title: string,
     description: string,
     car: {model:string,make:string},
-    assignedTo?: {name:string},
+    assignedTo?: {name:string,id:string},
     severity: Severity,
     status: Status,
     type:IncidentType,
     location: string,
     occurredAt: string,
-    resolvedAt?:string
+    resolvedAt?:string,
+    reportedBy:{name:string,id:string}
 }
 
 /////car type//

@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
-import { useIncidents, useSeeds, useUpdateIncident } from '../../lib/queries/incidents'
+import { Filters, useIncidents, useSeeds, useUpdateIncident } from '../../lib/queries/incidents'
 import { Table, THead, TBody, TR, TH, TD } from '../../components/ui/table'
 import { Badge } from '../../components/ui/badge'
 import { Button } from '../../components/ui/button'
@@ -9,6 +9,9 @@ import { Select } from '../../components/ui/select'
 import { Incident, IncidentTable, Status } from '../../types/type' 
 import { AccidentOptions, assignees, severities, statusArray, statuses, updateTypes } from '../../data'
 import { Pagination } from '@mui/material'
+
+import { useLoadingContext } from '../../context/context'
+import { listIncidents } from '../../lib/mockApi'
 
 export default function IncidentsList(){
   const [page, setPage] = useState(1)
@@ -19,39 +22,105 @@ export default function IncidentsList(){
   const [assignedTo, setAssignedTo] = useState('')
   const [startDate, setStartDate] = useState('')
   const [endDate, setEndDate] = useState('')
-  const limit = 3
-  const { data={total:0,items:[]} } = useIncidents({ page, limit, query, cars, severity, type, assignedTo, startDate, endDate })
+  const limit = 5
+  const { data={total:0,items:[]},isLoading } = useIncidents({ page, limit, query, cars, severity, type, assignedTo, startDate, endDate })
   const pageCount=Math.ceil(data?.total/limit)
 
   const [expandedRow, setExpandedRow] = useState<string|null>(null)
   const nav = useNavigate()
   const [seed,setSeeds]=useState<{cars:{label:string,value:string}[],users:{label:string,value:string}[]}>({cars:[{label:'',value:''}],users:[]})
 const {data:seeds}=useSeeds()
-    useEffect(()=>{
+    const {setLoading}=useLoadingContext()
+useEffect(()=>{
+  if(isLoading){
+    setLoading(true)
+  }else{
+    setLoading(false)
+  }
+},[data])
+useEffect(()=>{
       if(seeds&&'cars' in seeds&&'users' in seeds)
       setSeeds({cars:seeds.cars.map(el=>({label:el.model,value:String(el.id)})),users:seeds.users.map(el=>({label:el.name,value:String(el.id)}))})
     },[seeds])
-   
+   if(isLoading){
+    
+   }
   return (
+   
+ 
     <div className="space-y-4">
+     
+
       {/* Filters */}
-      <div className="grid grid-cols-1 md:grid-cols-7 gap-3">
+      <div className="grid  grid-cols-1 md:grid-cols-7 gap-3 relative">
         <Input placeholder="Search incidents…" value={query} onChange={e=>{setQuery(e.target.value); setPage(1)}} />
-        <Select value={cars}  onValueChange={v=>{setCars(v); setPage(1)}} options={[{label:'All cars', value:''},...seed?.cars]} />
-        <Select value={severity} onValueChange={v=>{setSeverity(v); setPage(1)}} options={[{label:'All Severity', value:''},...severities]} />
-        <Select value={type} onValueChange={v=>{setType(v); setPage(1)}} options={[{label:'All Types', value:''},...AccidentOptions]} />
-        <Select value={assignedTo} onValueChange={v=>{setAssignedTo(v); setPage(1)}} options={[{label:'All Assignees', value:''},...seed?.users]} />
-        <Input type="date" value={startDate} onChange={e=>{setStartDate(e.target.value); setPage(1)}} />
+        <Select value={cars}  onValueChange={v=>{
+          if(typeof v==='string'){
+
+            setCars((v)); 
+            setPage(1)}
+          }
+        }
+           options={[{label:'All cars', value:''},...seed?.cars]
+          
+          } />
+        <Select value={severity} onValueChange={v=>{if(typeof v !=='string')return; setSeverity(v); setPage(1)}} options={[{label:'All Severity', value:''},...severities]} />
+        <Select value={type} onValueChange={v=>{if(typeof v !=='string')return;  setType(v); setPage(1)}} options={[{label:'All Types', value:''},...AccidentOptions]} />
+        <Select value={assignedTo} onValueChange={v=>{if(typeof v !=='string')return;  setAssignedTo(v); setPage(1)}} options={[{label:'All Assignees', value:''},...seed?.users]} />
+        <Input type="date" value={startDate} onChange={ e=>{ setStartDate(e.target.value); setPage(1)}} />
         <Input type="date" value={endDate} onChange={e=>{setEndDate(e.target.value); setPage(1)}} />
+         
+       <div className="justify-end absolute right-0 -top-[4rem] ">
+  <Button
+    variant="outline"
+    onClick={async () => {
+    
+      const { items } = await listIncidents({page,limit:Infinity,
+        query,
+        cars,
+        severity,
+        type,
+        assignedTo,
+        startDate,
+        endDate,
+        exportAll: true,
+      })
+
+      if (!items.length) return
+
+    
+      const headers = Object.keys(items[0])
+      const csvRows: string[] = [headers.join(",")]
+
+      for (const row of items) {
+        const values = headers.map(h => {
+          const val = (row as any)[h]
+          return typeof val === "string" ? `"${val.replace(/"/g, '""')}"` : val
+        })
+        csvRows.push(values.join(","))
+      }
+
+      const blob = new Blob([csvRows.join("\n")], { type: "text/csv" })
+      const url = window.URL.createObjectURL(blob)
+      const a = document.createElement("a")
+      a.href = url
+      a.download = "incidents.csv"
+      a.click()
+      window.URL.revokeObjectURL(url)
+    }}
+  >
+    Export CSV
+  </Button>
+</div> 
       </div>
 
       {/* Table */}
      {/* Table view for desktop */}
-<div className="hidden md:block overflow-x-auto">
+<div className=" hidden md:block overflow-x-auto ">
   <Table>
     <THead>
       <TR>
-        <TH>Incident</TH><TH>Vehicle</TH><TH>Status</TH>
+        <TH>Incident</TH><TH>reportedBy</TH><TH>Vehicle</TH><TH>Status</TH>
         <TH>Severity</TH><TH>Type</TH><TH>Assigned To</TH><TH>Actions</TH>
       </TR>
     </THead>
@@ -61,8 +130,9 @@ const {data:seeds}=useSeeds()
           <TR key={i.id}>
             <TD>
               <div className="font-medium">{i.title}</div>
-              <div className="text-xs text-gray-500">{i.id}</div>
+              <div className="text-xs text-gray-500">case-{i.id}</div>
             </TD>
+            <TD>{i.reportedByName}</TD>
             <TD>{i.carName}</TD>
             <TD>
               <Badge className={i.status==='PENDING'?'bg-yellow-50 border-yellow-200 text-yellow-800': i.status==='IN_PROGRESS'?'bg-blue-50 border-blue-200 text-blue-800':'bg-green-50 border-green-200 text-green-800'}>
@@ -85,7 +155,7 @@ const {data:seeds}=useSeeds()
           {expandedRow===i.id && (
             <TR key={i.id+'view'}>
               <TD colSpan={7}>
-                <InlineView item={i} />
+                <InlineView filters={{page, limit,query,cars, severity,type,assignedTo,startDate,endDate}} item={i} />
               </TD>
             </TR>
           )}
@@ -126,7 +196,7 @@ const {data:seeds}=useSeeds()
 
       { i.id&&expandedRow===i.id && (
         <div className="mt-3">
-          <InlineView item={i} />
+          <InlineView filters={{page, limit,query,cars, severity,type,assignedTo,startDate,endDate}} item={i} />
         </div>
       )}
     </div>
@@ -139,16 +209,17 @@ const {data:seeds}=useSeeds()
         <Pagination page={page} count={pageCount} onChange={(_:unknown,currentPage:number)=>setPage(currentPage)} color="primary" />
       </div>
     </div>
+    
   )
 }
 
-function InlineView({ item }: { item: Partial<IncidentTable> }){
+function InlineView({ item,filters }: { item: Partial<IncidentTable>,filters:{page?:number, limit:number,query:string,cars:string, severity:string,type:string,assignedTo:string,startDate:string,endDate:string}} ){
   const [status, setStatus] = useState<Status>(item.status||'PENDING')
-  const [assignedTo, setAssignedTo] = useState(item.assignedTo?.name || '')
+  const [assignedTo, setAssignedTo] = useState({name:item.assignedTo?.name||'' ,id:item.assignedTo?.id||''})
   const update=useUpdateIncident()
   const handleSave = () => {
-    if(status||assignedTo){
-      update.mutate({id:item.id||'',data:{status,assignedTo,from:'INLINE',userId:'2'}})
+    if(status||assignedTo.id&&assignedTo.name){
+      update.mutate({id:item.id||'',data:{status,assignedTo,from:'INLINE',userId:'4',filters:{...filters}}})
     }
   }
   const [seed,setSeeds]=useState<{cars:{label:string,value:string}[],users:{label:string,value:string}[]}>({cars:[{label:'',value:''}],users:[]})
@@ -159,7 +230,10 @@ const {data:seeds}=useSeeds()
     },[seeds])
 
   return (
-    <div className="grid grid-cols-1 md:grid-cols-3 gap-4 bg-gray-50 p-4 rounded-xl">
+    <div className="grid grid-cols-1 md:grid-cols-3 gap-4 bg-gray-50 p-4 rounded-xl ">
+      
+ 
+
       <div>
         <div className="font-semibold">Description</div>
         <p className="text-sm text-gray-700">{item.description}</p>
@@ -173,11 +247,21 @@ const {data:seeds}=useSeeds()
         
         <div className="mt-4">
           <div className="font-semibold mb-1">Edit Status</div>
-          <Select value={status} onValueChange={(v:any)=>setStatus(v)} options={[...statuses,{label:'status',value:''}]} />
+          <Select  value={status} onValueChange={(v:any)=>setStatus(v)} options={[...statuses]} />
           <div className="font-semibold mt-2 mb-1">Assigned To</div>
-          <Select value={assignedTo} onValueChange={setAssignedTo} options={[...seed.users,{label:'assingnedTo',value:''}]} />
+          <Select objNeeded={true} value={assignedTo.id} onValueChange={(v)=>{
+        
+            if(v&&typeof v==='object'&&'value' in v&&'label'in v&&v.label!=='assingnedTo'){
+             
+              setAssignedTo({name:(v as {value:string,label:string}).label,id:(v as {value:string,label:string}).value})
+            }
+          }} options={[...seed.users,{label:'assingnedTo',value:''}]} />
           <Button variant="outline" className="mt-2" onClick={handleSave}>Save</Button>
         </div>
+      </div>
+      <div>
+ 
+
       </div>
     </div>
   )

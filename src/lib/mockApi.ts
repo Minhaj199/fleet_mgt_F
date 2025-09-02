@@ -3,20 +3,30 @@ import { request } from "./axiosUtil"
 import { enqueueSnackbar } from "notistack"
 import { rowIncidentFormater } from "../utils/incidentRowFormator"
 
+export async function listIncidents({
+  page = 1,
+  limit = 1000,
+  query = '',
+  cars = '',
+  severity = '',
+  type = '',
+  assignedTo = '',
+  startDate = '',
+  endDate = '',
+  exportAll = false,  
+}: any) {
+  const finalLimit = exportAll ? 10000 : limit  
 
+  const raw: { data: IncidentRow[], totoalCount: number } = await request({
+    url: `/api/incidents?page=${page}&limit=${finalLimit}&query=${query}&cars=${cars}&severity=${severity}&accidentOptions=${type}&assignedTo=${assignedTo}&startDate=${startDate}&endDate=${endDate}`,
+  })
 
-
-
-
-
-
-export async function listIncidents({ page=1, limit=2, query='', cars='', severity='', type='',assignedTo='', startDate='', endDate='' }:any){
-  const raw:{data:IncidentRow[],totoalCount:number} =await request({url:`/api/incidents?page=${page}&limit=${limit}&query=${query}&cars=${cars}&severity=${severity}&accidentOptions=${type}&assignedTo=${assignedTo}&startDate=${startDate}&endDate=${endDate}`})
   const total = raw.totoalCount
-  const items =rowIncidentFormater(raw.data)||[]
-  return ({ items, total, page, limit })
-  
+  const items = rowIncidentFormater(raw.data) || []
+
+  return { items, total, page, limit: finalLimit }
 }
+
 
 export async function getIncident(id:string){
   const item:IncidentDetails =  await request({url:`/api/incidents?from=get-incident&id=${id}`})

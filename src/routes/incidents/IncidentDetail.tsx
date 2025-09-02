@@ -21,7 +21,7 @@ export default function IncidentDetail() {
       <div className="flex items-center justify-between">
         <div>
           <h2 className="text-xl font-semibold">
-            {i.title} <span className="text-gray-400">({i.id})</span>
+            {i.title} <span className="text-gray-400"> case ({i.id})</span>
           </h2>
           <div className="text-sm text-gray-600">
             {i.carName} • {new Date(i.occurredAt).toLocaleString()} 

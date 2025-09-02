@@ -1,10 +1,5 @@
 import { IncidentType, IncidentUpdateType, Severity, Status } from "../types/type"
 
-export const cars = [
-  { label: 'Toyota Corolla', value: 'toyota-corolla' },
-  { label: 'Honda Civic', value: 'honda-civic' },
-  { label: 'Ford Focus', value: 'ford-focus' },
-]
 
 
 

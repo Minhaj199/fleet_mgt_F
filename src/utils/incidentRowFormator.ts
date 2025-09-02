@@ -18,7 +18,8 @@ export function rowIncidentFormater(data:IncidentRow[]){
             location:el.location,
             occurredAt:el.occurredAt,
             tbId:'INC-' + String(el.id).padStart(3,'0'),
-            resolvedAt:el.resolvedAt
+            resolvedAt:el.resolvedAt,
+            reportedByName:el.reportedBy.name
         }
     })
     return processedData
