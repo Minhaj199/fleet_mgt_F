@@ -1,7 +1,7 @@
 
-# Fleet Incidents (Vite + React + TypeScript) — v2
+# Fleet Incidents (Vite + React + TypeScript) 
 
-Light-mode only app using shadcn-style components, React Router, TanStack Query, and a mocked API (localStorage).
+
 
 ## Run
 ```bash
